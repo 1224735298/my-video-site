@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>互动视频 - 选择你的故事</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 提升移动端点击体验，避免选中文本 */
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Poppins', 'Roboto', Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        /* 主容器卡片风格 */
+        .interactive-container {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(20, 28, 40, 0.65);
+            backdrop-filter: blur(2px);
+            border-radius: 48px 48px 40px 40px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* 视频区域 */
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: #000;
+        }
+
+        /* 控制栏 & 信息 */
+        .info-bar {
+            padding: 12px 20px 0px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            color: #b9c7dd;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            background: rgba(12, 18, 28, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .scene-badge {
+            background: #1f2a3e;
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            color: #b9e2ff;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .replay-btn {
+            background: none;
+            border: none;
+            color: #8d9bb0;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 30px;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .replay-btn:active {
+            background: rgba(255,255,255,0.2);
+            transform: scale(0.96);
+        }
+
+        /* 选项面板 - 优雅毛玻璃 */
+        .options-panel {
+            padding: 20px 20px 28px;
+            background: rgba(18, 24, 36, 0.92);
+            backdrop-filter: blur(16px);
+            transition: all 0.25s ease;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .options-title {
+            text-align: center;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #7e8aa8;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .option-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 14px 12px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: inherit;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            background: #1e2a3a;
+            color: #eef4ff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,240,0.15);
+        }
+
+        .option-btn:active {
+            transform: scale(0.96);
+            filter: brightness(0.92);
+        }
+
+        .option-a {
+            background: linear-gradient(135deg, #2c3e66, #1b2b48);
+            border-bottom: 3px solid #5f9eff;
+        }
+
+        .option-b {
+            background: linear-gradient(135deg, #5e3a2c, #422c1f);
+            border-bottom: 3px solid #ffa45f;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 开始引导层 */
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            transition: all 0.3s ease;
+        }
+
+        .start-card {
+            background: #131c2c;
+            padding: 32px 24px;
+            border-radius: 64px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,215,150,0.3);
+        }
+
+        .start-card h2 {
+            color: #ffe6b3;
+            margin: 0 0 12px;
+            font-weight: 600;
+        }
+
+        .start-card p {
+            color: #aab7d4;
+            margin-bottom: 28px;
+            font-size: 0.9rem;
+        }
+
+        .start-btn {
+            background: #ffb347;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 60px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #1f1a12;
+            width: 80%;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .start-btn:active {
+            transform: scale(0.96);
+            background: #ff9f2c;
+        }
+
+        /* 错误提示小toast */
+        .toast-msg {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #d32f2fcc;
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            z-index: 300;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        footer {
+            font-size: 0.65rem;
+            text-align: center;
+            padding: 12px;
+            color: #4f5b77;
+            background: #0b101a;
+        }
+
+        @media (max-width: 550px) {
+            .option-btn {
+                font-size: 1rem;
+                padding: 12px 8px;
+            }
+            .button-group {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="interactive-container">
+    <div class="video-wrapper">
+        <video id="storyVideo" preload="metadata" playsinline webkit-playsinline></video>
+    </div>
+    <div class="info-bar">
+        <span class="scene-badge" id="sceneNameLabel">🎬 故事序章</span>
+        <button class="replay-btn" id="replayButton" aria-label="重播当前视频">↻ 重播</button>
+    </div>
+    <div id="optionsPanel" class="options-panel hidden">
+        <div class="options-title">⚡ 选择你的命运 ⚡</div>
+        <div class="button-group" id="buttonsContainer">
+            <!-- 动态生成A/B按钮 -->
+        </div>
+    </div>
+    <footer>互动视频 · 每个选择导向不同结局</footer>
+</div>
+
+<!-- 启动遮罩 -->
+<div id="startOverlay" class="start-overlay">
+    <div class="start-card">
+        <h2>🎬 妍妍互动影院</h2>
+        <p>每段视频结尾会出现 A / B 选项<br>你的每个选择，改变故事走向</p>
+        <button class="start-btn" id="startGameBtn">▶ 开始冒险</button>
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // 1. 视频图谱数据模型 (可轻松扩展至几十个视频节点)
+    // 每个节点包含: videoUrl(素材地址), title(场景名), options: [{text, nextNode}]
+    // 满足每个视频结尾必须AB选项，这里确保所有节点都有两个选项(包括结局可循环或重开)
+    // 说明: 实际使用中，只需按照相同结构追加新节点即可支持数十段素材。
+    // --------------------------------------------------------------
+    const VIDEO_GRAPH = {
+        // 开场节点
+        "start": {
+            title: "🌄 启程-边界之择",
+            videoUrl: "https://1224735298.github.io/my-video-site/mmexport1779177453398.mp4",  // 示例视频1 (高清)
+            options: [
+                { text: "A · 开启您的抉择~", nextNode: "forest_path" },
+                { text: "B · 重新开始~", nextNode: "start" }
+            ]
+        },
+        // 节点2: 24岁满腔抱负
+        "forest_path": {
+            title: "🌲 24岁满腔抱负",
+            videoUrl: "https://1224735298.github.io/my-video-site/mmexport1779177456357.mp4",
+            options: [
+                { text: "A · 参加饭局", nextNode: "start" },
+                { text: "B · 婉拒要请", nextNode: "ancient_ruins" }
+            ]
+        },
+        // 节点3: 溪流岸边
+        "river_side": {
+            title: "💧 精灵溪谷",
+            videoUrl: "https://1224735298.github.io/my-video-site/mmexport1779177453398.mp4",
+            options: [
+                { text: "A · 遇见神秘商人", nextNode: "merchant" },
+                { text: "B · 穿越吊桥", nextNode: "bridge" }
+            ]
+        },
+        // 节点4: 婉拒要请
+        "ancient_ruins": {
+            title: "🏛️ 婉拒要请",
+            videoUrl: "https://1224735298.github.io/my-video-site/mmexport1779177458096.mp4",
+            options: [
+                { text: "A · 继续进行~", nextNode: "merchant" },
+                { text: "B · 返回重选~", nextNode: "forest_path" }
+            ]
+        },
+        // 节点5: 结束
+        "merchant": {
+            title: "🧙 结束",
+            videoUrl: "https://1224735298.github.io/my-video-site/mmexport1779177459864.mp4",
+            options: [
+                { text: "A · 重新开始~", nextNode: "secret_path" },
+                { text: "B · 重新开始~", nextNode: "river_side" }
+            ]
+        },
+        // 节点6: 吊桥惊魂
+        "bridge": {
+            title: "🌉 破损吊桥",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",  // 知名短片Sintel片段
+            options: [
+                { text: "A · 冒险冲过去", nextNode: "mountain_peak" },
+                { text: "B · 寻找其他路线", nextNode: "forest_path" }
+            ]
+        },
+        // 节点7: 隐藏秘径 (好结局)
+        "secret_path": {
+            title: "🗝️ 秘境花园",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+            options: [
+                { text: "A · 接受精灵祝福，完美结局", nextNode: "good_ending" },
+                { text: "B · 继续冒险旅程", nextNode: "start" }
+            ]
+        },
+        // 结局节点: 英雄结局
+        "hero_ending": {
+            title: "🏆 传说英雄",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCar.mp4",
+            options: [
+                { text: "A · 重新开始故事", nextNode: "start" },
+                { text: "B · 观看制作名单", nextNode: "credits" }
+            ]
+        },
+        // 结局: 逃亡结局
+        "escape_ending": {
+            title: "🌌 暗夜逃亡",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+            options: [
+                { text: "A · 卷土重来", nextNode: "start" },
+                { text: "B · 铭记这段传奇", nextNode: "credits" }
+            ]
+        },
+        // 山顶奇遇
+        "mountain_peak": {
+            title: "⛰️ 龙之巅",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            options: [
+                { text: "A · 与龙结盟", nextNode: "good_ending" },
+                { text: "B · 逃离山脉", nextNode: "start" }
+            ]
+        },
+        // 完美结局节点
+        "good_ending": {
+            title: "🌈 永恒和平",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            options: [
+                { text: "A · 开启新旅程", nextNode: "start" },
+                { text: "B · 重温经典", nextNode: "start" }
+            ]
+        },
+        // 制作名单 (循环重开)
+        "credits": {
+            title: "📜 制作名单 · 感谢游玩",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFunflies.mp4",
+            options: [
+                { text: "A · 重新开始", nextNode: "start" },
+                { text: "B · 再玩一次", nextNode: "start" }
+            ]
+        }
+        // ========== 扩展说明 ==========
+        // 如需添加几十个视频，只需按照 "节点ID": { title, videoUrl, options: [{text, nextNode}] } 格式追加。
+        // 例如 "battle_field": { title: "⚔️ 战场", videoUrl: "你的视频链接.mp4", options: [{ text: "进攻", nextNode:"xxx"},{ text:"防御", nextNode:"yyy"}] }
+        // 确保所有节点的nextNode都在图谱中存在，否则可提供容错指向 "start"。
+    };
+
+    // ----- 辅助函数：确保所有节点都有两个有效选项，并防止错误目标节点不存在 -----
+    function ensureValidNode(nodeId) {
+        if (!VIDEO_GRAPH[nodeId]) {
+            console.warn(`节点 ${nodeId} 不存在，重定向至 start`);
+            return VIDEO_GRAPH["start"];
+        }
+        return VIDEO_GRAPH[nodeId];
+    }
+
+    // 获取节点安全选项
+    function getNodeOptions(nodeId) {
+        const node = ensureValidNode(nodeId);
+        // 如果options不足两个，补齐默认(理论上所有定义都有两个，鲁棒处理)
+        let opts = node.options;
+        if (!opts || opts.length < 2) {
+            opts = [
+                { text: "🔄 重新开始", nextNode: "start" },
+                { text: "🔄 重新开始", nextNode: "start" }
+            ];
+        }
+        return opts;
+    }
+
+    // ---------- DOM 元素 ----------
+    const videoEl = document.getElementById('storyVideo');
+    const optionsPanel = document.getElementById('optionsPanel');
+    const buttonsContainer = document.getElementById('buttonsContainer');
+    const sceneNameSpan = document.getElementById('sceneNameLabel');
+    const replayBtn = document.getElementById('replayButton');
+    const startOverlay = document.getElementById('startOverlay');
+    const startGameBtn = document.getElementById('startGameBtn');
+
+    // 状态变量
+    let currentNodeId = "start";          // 当前视频节点id
+    let isVideoEnded = false;             // 视频是否已结束（用来控制手动重播时不立刻显示选项）
+    let isTransitioning = false;           // 避免快速连续切换
+    let currentVideoLoadPromise = null;
+    
+    // 显示简易 Toast 错误/提示
+    function showMessage(msg, isError = true) {
+        let existingToast = document.querySelector('.toast-msg');
+        if(existingToast) existingToast.remove();
+        let toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerText = msg;
+        if(isError) toast.style.background = "#c62828cc";
+        else toast.style.background = "#2c6e2ccc";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+    }
+
+    // 隐藏选项面板
+    function hideOptions() {
+        optionsPanel.classList.add('hidden');
+    }
+
+    // 显示选项面板 & 动态渲染AB按钮
+    function showOptionsForCurrentNode() {
+        if (isTransitioning) return;
+        const opts = getNodeOptions(currentNodeId);
+        // 清空容器
+        buttonsContainer.innerHTML = '';
+        // 创建两个按钮 A , B
+        const btnA = document.createElement('button');
+        btnA.className = 'option-btn option-a';
+        btnA.innerText = opts[0]?.text || "选项 A";
+        const btnB = document.createElement('button');
+        btnB.className = 'option-btn option-b';
+        btnB.innerText = opts[1]?.text || "选项 B";
+        
+        btnA.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isTransitioning) return;
+            const nextNode = opts[0]?.nextNode;
+            if (!nextNode) {
+                showMessage("剧情未定义，返回开始");
+                selectNodeAndLoad("start");
+            } else {
+                selectNodeAndLoad(nextNode);
+            }
+        });
+        
+        btnB.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isTransitioning) return;
+            const nextNode = opts[1]?.nextNode;
+            if (!nextNode) {
+                showMessage("剧情未定义，返回开始");
+                selectNodeAndLoad("start");
+            } else {
+                selectNodeAndLoad(nextNode);
+            }
+        });
+        
+        buttonsContainer.appendChild(btnA);
+        buttonsContainer.appendChild(btnB);
+        optionsPanel.classList.remove('hidden');
+        isVideoEnded = true; // 标记结束状态，用于重播时重置
+    }
+
+    // 核心: 加载指定节点视频
+    function loadVideoNode(nodeId, autoPlay = true) {
+        return new Promise((resolve, reject) => {
+            // 清空过渡锁
+            if (isTransitioning && !autoPlay) {
+                // 强制重置锁缓慢情况
+            }
+            isTransitioning = true;
+            hideOptions();
+            // 获取节点信息
+            const node = ensureValidNode(nodeId);
+            const videoUrl = node.videoUrl;
+            const title = node.title;
+            // 更新场景名
+            sceneNameSpan.innerText = `🎭 ${title}`;
+            currentNodeId = nodeId;
+            
+            // 重要: 移除原有的ended事件，避免重复触发
+            const oldEndHandler = videoEl._onEndedHandler;
+            if (oldEndHandler) videoEl.removeEventListener('ended', oldEndHandler);
+            
+            // 暂停当前视频，清空src
+            videoEl.pause();
+            // 重置src并加载新视频
+            videoEl.src = videoUrl;
+            videoEl.load();
+            
+            // 绑定新的 ended 事件
+            const endedHandler = () => {
+                // 视频自然结束，并且不是切换中
+                if (!isTransitioning) {
+                    // 显示选项面板 (AB选项)
+                    showOptionsForCurrentNode();
+                }
+                isVideoEnded = true;
+            };
+            videoEl._onEndedHandler = endedHandler;
+            videoEl.addEventListener('ended', endedHandler);
+            
+            // 尝试自动播放 (依赖于用户手势上下文)
+            if (autoPlay) {
+                const playPromise = videoEl.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isTransitioning = false;
+                        isVideoEnded = false;
+                        resolve(true);
+                    }).catch(err => {
+                        console.warn("自动播放失败:", err);
+                        // 移动端限制时显示轻提示，但不阻塞界面，用户点重播或tap屏幕可触发播放
+                        showMessage("点击视频区域或重播按钮继续", false);
+                        isTransitioning = false;
+                        // 提供手动播放引导: 给video添加一次单击播放
+                        const handleUserPlay = () => {
+                            videoEl.play().then(() => {
+                                isVideoEnded = false;
+                            }).catch(e => console.log);
+                            videoEl.removeEventListener('click', handleUserPlay);
+                        };
+                        videoEl.addEventListener('click', handleUserPlay, { once: true });
+                        reject(err);
+                    });
+                } else {
+                    isTransitioning = false;
+                    resolve(true);
+                }
+            } else {
+                isTransitioning = false;
+                resolve(true);
+            }
+            
+            // 加载错误处理
+            videoEl.onerror = () => {
+                showMessage("视频加载失败，请检查网络或素材地址");
+                isTransitioning = false;
+                reject(new Error("video load error"));
+            };
+        });
+    }
+    
+    // 选项切换调用: 用户点击选项后切换到新节点
+    function selectNodeAndLoad(nextNodeId) {
+        if (isTransitioning) {
+            showMessage("剧情切换中，请稍后...", false);
+            return;
+        }
+        // 确保下一个节点存在，不存在则fallback至start
+        if (!VIDEO_GRAPH[nextNodeId]) {
+            console.warn(`无效节点: ${nextNodeId}, 重置到start`);
+            nextNodeId = "start";
+        }
+        isTransitioning = true;
+        hideOptions();
+        // 切换新视频，自动播放 (此时处于用户手势中，可正常播放)
+        loadVideoNode(nextNodeId, true).catch(err => {
+            console.error("切换失败", err);
+            isTransitioning = false;
+            showMessage("视频切换出错，请重试");
+        });
+    }
+    
+    // 重播当前视频 (不改变节点，重新播放并隐藏选项)
+    function replayCurrentVideo() {
+        if (isTransitioning) {
+            showMessage("请稍后再重播");
+            return;
+        }
+        // 隐藏选项面板
+        hideOptions();
+        // 重置当前视频播放
+        videoEl.currentTime = 0;
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                isVideoEnded = false;
+                isTransitioning = false;
+            }).catch(err => {
+                console.warn("重播自动播放失败", err);
+                showMessage("点击视频画面播放", false);
+                isTransitioning = false;
+                // 用户手动触发播放
+                const playOnce = () => {
+                    videoEl.play().catch(e=>console.log);
+                    videoEl.removeEventListener('click', playOnce);
+                };
+                videoEl.addEventListener('click', playOnce, { once: true });
+            });
+        }
+    }
+    
+    // 初始化游戏 (开始按钮触发)
+    function startInteractiveVideo() {
+        startOverlay.style.display = 'none';
+        // 加载第一个视频节点 start, 自动播放
+        loadVideoNode("start", true).catch(err => {
+            showMessage("请检查网络或刷新重试", true);
+            // 如果自动播放失败，保留开始按钮备用
+            startOverlay.style.display = 'flex';
+        });
+    }
+    
+    // 绑定重播按钮
+    replayBtn.addEventListener('click', () => {
+        replayCurrentVideo();
+    });
+    
+    // 开始按钮事件
+    startGameBtn.addEventListener('click', () => {
+        startInteractiveVideo();
+    });
+    
+    // 优雅处理页面可见性变化和意外的视频结束再次显示选项 (避免重复)
+    videoEl.addEventListener('pause', () => {
+        // 如果视频手动暂停并且已经结束状态标志不对，无需额外操作
+    });
+    
+    // 防止视频播放完毕后用户点击重播，结束时再次出现选项同时逻辑保证
+    // 如果播放结束，重播之后会重新绑定ended，正常流程显示选项
+    
+    // 为了演示几十段视频素材的扩展性，在控制台输出帮助信息
+    console.log("🎥 互动视频引擎已启动 | 当前视频图谱节点数:", Object.keys(VIDEO_GRAPH).length);
+    console.log("💡 扩展方式: 在 VIDEO_GRAPH 对象中添加新节点即可，每个节点必须包含 videoUrl, title, options(两个选项)");
+    console.log("📀 素材支持本地或网络URL，目前示例包含", Object.keys(VIDEO_GRAPH).length, "个独特剧情节点");
+    
+    // 预加载优化: 预加载下一个视频不是必须，但可以在选项hover时简单预连接(可选)。保证主体简洁
+    
+    // 针对移动端: 确保开始遮罩完全消除后，video可以顺利播放。额外添加touchstart辅助避免严格策略(但用户点击开始已经触发手势)
+    // 为增强兼容，给video容器增加一个备用点击播放（万一首次自动播放被拦截后，用户可以点视频播放）
+    videoEl.addEventListener('click', () => {
+        if (videoEl.paused && !isTransitioning && !isVideoEnded) {
+            videoEl.play().catch(e => console.log);
+        }
+    });
+    
+    // 可选：如果开始遮罩没有完全隐藏，用户可能多次点击开始,防止重复
+    let started = false;
+    startGameBtn.addEventListener('click', () => {
+        if (started) return;
+        started = true;
+    }, { once: true });
+    
+    // 页面显示后若视频暂停且未结束，尝试恢复播放
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && videoEl && videoEl.paused && !isVideoEnded && !optionsPanel.classList.contains('hidden') === false) {
+            videoEl.play().catch(e=>null);
+        }
+    });
+</script>
+</body>
+</html>
