@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>互动视频Demo · 自动跳转+单按钮</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', Helvetica, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 550px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .main-title {
+            font-size: 2.4rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #FFF9C4, #FFE0A3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.2;
+        }
+        .sub-title {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            color: #c9d4ff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+        @supports not (background-clip: text) {
+            .main-title { color: #ffdf8c; }
+        }
+
+        .video-card {
+            background: rgba(20, 28, 40, 0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .info-bar {
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(12, 18, 28, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .scene-badge {
+            background: #1f2a3e;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #b9e2ff;
+        }
+
+        .replay-btn {
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: #ccd9f0;
+            font-size: 1rem;
+            padding: 6px 12px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.1s;
+        }
+        .replay-btn:active {
+            background: rgba(255,255,255,0.2);
+            transform: scale(0.96);
+        }
+
+        .options-panel {
+            padding: 16px 16px 20px;
+            background: rgba(18, 24, 36, 0.96);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255,255,240,0.1);
+        }
+
+        .options-title {
+            text-align: center;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: #9aabcf;
+            margin-bottom: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+        }
+
+        .option-btn {
+            flex: 1;
+            padding: 14px 8px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.1s;
+            background: #1e2a3a;
+            color: #eef4ff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        }
+        .option-btn:active { transform: scale(0.96); }
+        .option-a {
+            background: linear-gradient(135deg, #2c3e66, #1a2a48);
+            border-bottom: 3px solid #5f9eff;
+        }
+        .option-b {
+            background: linear-gradient(135deg, #5e3a2c, #3f2a1e);
+            border-bottom: 3px solid #ffa45f;
+        }
+        /* 单按钮样式 */
+        .option-btn-single {
+            width: 80%;
+            margin: 0 auto;
+            display: block;
+            background: linear-gradient(135deg, #2c3e66, #1a2a48);
+            border-bottom: 3px solid #5f9eff;
+        }
+        .hidden { display: none; }
+
+        .history-control {
+            margin-top: 4px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .toggle-history-btn {
+            background: rgba(30, 40, 60, 0.9);
+            border: none;
+            border-radius: 40px;
+            padding: 8px 18px;
+            color: #ffdfa5;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .toggle-history-btn:active {
+            transform: scale(0.96);
+            background: #2a3a5e;
+        }
+
+        .history-sidebar {
+            background: rgba(15, 20, 30, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 14px 12px;
+            margin-top: 8px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,200,0.15);
+        }
+        .history-sidebar.collapsed { display: none; }
+        .history-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #d9e2ff;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .history-list {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+        .history-item {
+            background: rgba(25, 32, 48, 0.8);
+            border-radius: 40px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: 0.1s;
+            border-left: 3px solid #4b6a9b;
+        }
+        .history-item.active {
+            background: linear-gradient(135deg, #2a3a5a, #1f2e4a);
+            border-left-color: #ffb347;
+        }
+        .history-item:active { transform: scale(0.96); }
+        .history-title {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #eef3ff;
+        }
+        .history-badge {
+            font-size: 0.65rem;
+            background: #ffb34730;
+            padding: 3px 8px;
+            border-radius: 30px;
+            color: #ffcd94;
+        }
+        .empty-history {
+            text-align: center;
+            color: #7e8eb0;
+            padding: 12px;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+
+        .credits {
+            text-align: center;
+            font-size: 0.6rem;
+            color: #5e6d8c;
+            padding: 10px 0 4px;
+            opacity: 0.6;
+            letter-spacing: 1px;
+        }
+
+        .start-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.94);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+        .start-card {
+            background: #131c2c;
+            padding: 28px 20px;
+            border-radius: 56px;
+            text-align: center;
+            width: 85%;
+            max-width: 300px;
+        }
+        .start-card h2 {
+            color: #ffe6b3;
+            margin: 0 0 8px;
+        }
+        .start-card p {
+            color: #b0c0e0;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+        }
+        .start-btn {
+            background: #ffb347;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 60px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            width: 80%;
+            cursor: pointer;
+        }
+        .start-btn:active { transform: scale(0.96); }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #d32f2fdd;
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            z-index: 300;
+            pointer-events: none;
+        }
+        button { touch-action: manipulation; }
+
+        .path-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 400;
+        }
+        .path-modal-content {
+            background: #1a2438;
+            border-radius: 32px;
+            width: 85%;
+            max-width: 400px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 20px;
+            border: 1px solid #ffdfa5;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+        }
+        .path-modal-content h3 {
+            color: #ffdfa5;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .path-list {
+            background: #0f1725;
+            border-radius: 24px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .path-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #2a3a5a;
+            color: #eef3ff;
+            font-size: 0.9rem;
+        }
+        .path-item:last-child { border-bottom: none; }
+        .close-modal-btn {
+            background: #ffb347;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+            cursor: pointer;
+            color: #1f1a12;
+        }
+        .close-modal-btn:active { transform: scale(0.97); }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="title-section">
+        <div class="main-title">互动视频Demo</div>
+        <div class="sub-title">选择你的命运 · 启程-边界之择</div>
+    </div>
+
+    <div class="video-card">
+        <div class="video-wrapper">
+            <video id="storyVideo" preload="metadata" playsinline webkit-playsinline></video>
+        </div>
+        <div class="info-bar">
+            <span class="scene-badge" id="sceneNameLabel">🎬 序章</span>
+            <button class="replay-btn" id="replayButton">↻ 重播</button>
+        </div>
+        <div id="optionsPanel" class="options-panel hidden">
+            <div class="options-title">⚡ 选择分支 ⚡</div>
+            <div class="button-group" id="buttonsContainer"></div>
+        </div>
+    </div>
+
+    <div class="history-control">
+        <button id="toggleHistoryBtn" class="toggle-history-btn">📜 进度回溯 ▼</button>
+    </div>
+    <div id="historySidebar" class="history-sidebar collapsed">
+        <div class="history-header"><span>📖 已完成章节 (点击回溯至末尾重选)</span></div>
+        <div id="historyListContainer" class="history-list"><div class="empty-history">✨ 完成剧情后，章节会出现在这里</div></div>
+    </div>
+    <div class="credits">互动视频 · 每个选择导向不同结局</div>
+    <div class="credits">网站制作者：zel；演示网站Demo禁止商用；</div>
+</div>
+
+<div id="startOverlay" class="start-overlay">
+    <div class="start-card">
+        <h2>《启程-边界之择》</h2>
+        <p>🎬 互动视频样板<br/>视频结尾弹出选项，选择不同分支。</p>
+        <button class="start-btn" id="startGameBtn">▶ 开启体验</button>
+    </div>
+</div>
+
+<script>
+    const zel = "https://zel-1256293575.cos.ap-chongqing.myqcloud.com/vio_520_v2/";
+    const VIDEO_SOURCES = {
+        v111: zel + "111.mp4",
+        v222: zel + "222.mp4",
+        v222_jj: zel + "222-jj.mp4",
+        v222_js: zel + "222-js.mp4",
+        v222_jjh: zel + "222-jjh.mp4",
+        v333: zel + "333.mp4",
+        v333_js: zel + "333-js.mp4",
+        v333_jj: zel + "333-jj.mp4",
+        v333_jjh: zel + "333-jjh.mp4",
+        v444: zel + "444.mp4",
+        v444_js: zel + "444-js.mp4",
+        v444_jj: zel + "444-jj.mp4",
+        v444_jjh: zel + "444-jjh.mp4",
+        v444_jjh2: zel + "444-jjh2.mp4",
+        v444_jsh: zel + "444-jsh.mp4",
+        v555: zel + "555.mp4"
+    };
+
+    // ---------- 视频图谱，支持 autoNext 自动跳转（不显示选项）及单按钮 ----------
+    const VIDEO_GRAPH = {
+        "v111": {
+            title: "🎬 片头",
+            videoUrl: VIDEO_SOURCES.v111,
+            // 单按钮示例：只有一个选项
+            options: [
+                { text: "【开启游戏】", nextNode: "v222" }
+            ]
+        },
+        "v222": {
+            title: "🌲 第一幕",
+            videoUrl: VIDEO_SOURCES.v222,
+            options: [
+                { text: "A · 接收邀请", nextNode: "v222_js" },
+                { text: "B · 拒绝邀请", nextNode: "v222_jj" }
+            ]
+        },
+        "v222_js": {
+            title: "🚗 第一幕接受",
+            videoUrl: VIDEO_SOURCES.v222_js,
+            autoNext: "v333",
+            options: [
+                { text: "A · 重新选择", nextNode: "v222" },
+                { text: "B · 继续前进", nextNode: "v333" }
+            ]
+        },
+        "v222_jj": {
+            title: "🏛️ 第一幕拒绝",
+            videoUrl: VIDEO_SOURCES.v222_jj,
+            autoNext: "v222_jjh",
+            options: [
+                { text: "A · 重新选择", nextNode: "v222" },
+                { text: "B · 继续前进", nextNode: "v222_jjh" }
+            ]
+        },
+        "v222_jjh": {
+            title: "🧙 第一幕拒绝后",
+            videoUrl: VIDEO_SOURCES.v222_jjh,
+            options: [
+                { text: "开启第三幕", nextNode: "v444" }
+            ]
+        },
+        "v333": {
+            title: "🌉 第二幕",
+            videoUrl: VIDEO_SOURCES.v333,
+            options: [
+                { text: "A · 接受礼品", nextNode: "v333_js" },
+                { text: "B · 拒绝礼品", nextNode: "v333_jj" }
+            ]
+        },
+        "v333_js": {
+            title: "🗝️ 第二幕接受",
+            videoUrl: VIDEO_SOURCES.v333_js,
+            autoNext: "v444",
+            options: [
+                { text: "A · 重新选择", nextNode: "v333" },
+                { text: "B · 继续前进", nextNode: "v444" }
+            ]
+        },
+        "v333_jj": {
+            title: "🏆 第二幕拒绝",
+            videoUrl: VIDEO_SOURCES.v333_jj,
+            autoNext: "v333_jjh",
+            options: [
+                { text: "A · 重新选择", nextNode: "v333" },
+                { text: "B · 继续前进", nextNode: "v333_jjh" }
+            ]
+        },
+        "v333_jjh": {
+            title: "🌙 第二幕拒绝后",
+            videoUrl: VIDEO_SOURCES.v333_jjh,
+            options: [
+                { text: "开启第三幕", nextNode: "v444" }
+            ]
+        },
+        "v444": {
+            title: "⛰️ 第三幕",
+            videoUrl: VIDEO_SOURCES.v444,
+            options: [
+                { text: "A · 接受纸袋", nextNode: "v444_js" },
+                { text: "B · 拒绝纸袋", nextNode: "v444_jj" }
+            ]
+        },
+        "v444_jjh": {
+            title: "⛰️ 重返第三幕",
+            videoUrl: VIDEO_SOURCES.v444_jjh,
+            options: [
+                { text: "A · 接受纸袋", nextNode: "v444_js" },
+                { text: "B · 拒绝纸袋", nextNode: "v444_jj" }
+            ]
+        },
+        "v444_js": {
+            title: "🌈 第三幕接受",
+            videoUrl: VIDEO_SOURCES.v444_js,
+            autoNext: "v444_jsh",
+            options: [
+                { text: "A · 重新选择", nextNode: "v444" },
+                { text: "B · 继续前进", nextNode: "v555" }
+            ]
+        },
+        "v444_jsh": {
+            title: "🔁 第三幕接受后",
+            videoUrl: VIDEO_SOURCES.v444_jsh,
+            options: [
+                { text: "返回上一幕", nextNode: "v444_jjh" }
+            ]
+        },
+        "v444_jj": {
+            title: "📜 第三幕拒绝",
+            videoUrl: VIDEO_SOURCES.v444_jj,
+            autoNext: "v444_jjh2",
+            options: [
+                { text: "A · 重新选择", nextNode: "v444" },
+                { text: "B · 继续前进", nextNode: "v444_jjh2" }
+            ]
+        },
+        "v444_jjh2": {
+            title: "🔁 第三幕拒绝后",
+            videoUrl: VIDEO_SOURCES.v444_jjh2,
+            options: [
+                { text: "A · 继续前进", nextNode: "v555" }
+            ]
+        },
+        "v555": {
+            title: "🌟 下章预告",
+            videoUrl: VIDEO_SOURCES.v555,
+            options: [
+                { text: "A · 本章结束", nextNode: "v111" },
+                { text: "B · 再玩一次", nextNode: "v111" }
+            ]
+        }
+    };
+
+    function ensureNode(nodeId) { return VIDEO_GRAPH[nodeId] || VIDEO_GRAPH["v111"]; }
+    function getOptions(nodeId) {
+        const node = ensureNode(nodeId);
+        let opts = node.options;
+        // 如果没有 options 或长度为0，则提供一个默认选项防止崩溃
+        if (!opts || opts.length === 0) return [{ text: "继续", nextNode: "v111" }];
+        return opts;
+    }
+
+    // DOM 元素
+    const video = document.getElementById('storyVideo');
+    const optionsPanel = document.getElementById('optionsPanel');
+    const btnsContainer = document.getElementById('buttonsContainer');
+    const sceneLabel = document.getElementById('sceneNameLabel');
+    const replayBtn = document.getElementById('replayButton');
+    const startOverlay = document.getElementById('startOverlay');
+    const startBtn = document.getElementById('startGameBtn');
+    const historyContainer = document.getElementById('historyListContainer');
+    const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
+    const historySidebar = document.getElementById('historySidebar');
+
+    let historyNodes = [];
+    let currentHistoryIdx = -1;
+    let currentNodeId = "v111";
+    let isTransition = false;
+    let isJumpback = false;
+    let currentEndedHandler = null;
+
+    function showMsg(msg, isErr = true) {
+        let t = document.querySelector('.toast-msg');
+        if(t) t.remove();
+        let div = document.createElement('div');
+        div.className = 'toast-msg';
+        div.innerText = msg;
+        if(isErr) div.style.background = "#c62828cc";
+        else div.style.background = "#2c6e2ccc";
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 2000);
+    }
+
+    function hideOptions() { optionsPanel.classList.add('hidden'); }
+
+    function clearHistory() {
+        historyNodes = [];
+        currentHistoryIdx = -1;
+        renderHistoryList();
+    }
+
+    function showPathModalAsync() {
+        return new Promise((resolve) => {
+            const pathList = [];
+            for (let i = 0; i < historyNodes.length; i++) {
+                const nid = historyNodes[i];
+                const node = VIDEO_GRAPH[nid];
+                if (node) pathList.push(`${i+1}. ${node.title}`);
+            }
+            const modal = document.createElement('div');
+            modal.className = 'path-modal';
+            modal.innerHTML = `
+                <div class="path-modal-content">
+                    <h3>📜 你选择的道路</h3>
+                    <div class="path-list">
+                        ${pathList.map(p => `<div class="path-item">${p}</div>`).join('') || '<div class="path-item">暂无记录</div>'}
+                    </div>
+                    <button class="close-modal-btn">关闭</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const closeBtn = modal.querySelector('.close-modal-btn');
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve();
+            });
+        });
+    }
+
+    function jumpToNodeEnd(targetNodeId, callbackAfterEnd = null) {
+        if (isTransition) return;
+        isTransition = true;
+        isJumpback = true;
+        hideOptions();
+        const node = ensureNode(targetNodeId);
+        currentNodeId = targetNodeId;
+        sceneLabel.innerText = `↺ ${node.title} (回溯重选)`;
+
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+
+        const seekToEnd = () => {
+            if (video.duration && isFinite(video.duration)) {
+                video.currentTime = Math.max(0, video.duration - 2);
+                video.play().catch(err => showMsg("点击画面播放", false));
+            } else {
+                setTimeout(() => {
+                    if (video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration - 2;
+                        video.play().catch(e=>console.log);
+                    } else {
+                        video.play().catch(e=>console.log);
+                    }
+                }, 300);
+            }
+        };
+
+        const onLoaded = () => {
+            video.removeEventListener('loadedmetadata', onLoaded);
+            seekToEnd();
+        };
+        video.addEventListener('loadedmetadata', onLoaded);
+        if (video.readyState >= 1) onLoaded();
+
+        const onEnded = () => {
+            sceneLabel.innerText = node.title;
+            isJumpback = false;
+            isTransition = false;
+            if (callbackAfterEnd) callbackAfterEnd();
+            else {
+                // 回溯结束后，判断当前节点是否有 autoNext，若有则直接跳转，否则显示选项
+                if (node.autoNext) {
+                    loadNode(node.autoNext);
+                } else {
+                    showOptions(true);
+                }
+            }
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+
+        setTimeout(() => {
+            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) {
+                currentEndedHandler();
+            }
+        }, 2000);
+        setTimeout(() => {
+            if (isTransition) { isTransition = false; isJumpback = false; }
+        }, 5000);
+    }
+
+    // 支持单按钮和双按钮的选项面板
+    function showOptions(skipRecord = false) {
+        if (isTransition) return;
+        const opts = getOptions(currentNodeId);
+        btnsContainer.innerHTML = '';
+        
+        const handlePick = async (nextNode, btnText) => {
+            if (isTransition) return;
+            if (!nextNode) nextNode = "v111";
+
+            if (currentNodeId === "v555") {
+                if (btnText.includes("本章结束")) {
+                    await showPathModalAsync();
+                    return;
+                } else if (btnText.includes("再玩一次")) {
+                    clearHistory();
+                    loadNode("v111");
+                    return;
+                }
+            }
+
+            // 重新选择类（仅当有两个选项且文本包含“重新选择”时）
+            const isRechoice = (opts.length === 2 && (btnText.includes("重新选择") || (btnText.includes("重新播放") && nextNode === currentNodeId)));
+            if (isRechoice) {
+                jumpToNodeEnd(nextNode);
+                return;
+            }
+
+            if (!skipRecord && !isJumpback) recordCurrentNodeToHistory();
+
+            if (nextNode === "v111") {
+                clearHistory();
+            }
+            loadNode(nextNode);
+        };
+
+        if (opts.length === 1) {
+            // 单按钮模式
+            const btn = document.createElement('button');
+            btn.className = 'option-btn option-btn-single';
+            btn.innerText = opts[0].text;
+            btn.onclick = () => handlePick(opts[0].nextNode, opts[0].text);
+            btnsContainer.appendChild(btn);
+        } else {
+            // 双按钮模式
+            const btnA = document.createElement('button');
+            btnA.className = 'option-btn option-a';
+            btnA.innerText = opts[0].text;
+            const btnB = document.createElement('button');
+            btnB.className = 'option-btn option-b';
+            btnB.innerText = opts[1].text;
+            btnA.onclick = () => handlePick(opts[0].nextNode, opts[0].text);
+            btnB.onclick = () => handlePick(opts[1].nextNode, opts[1].text);
+            btnsContainer.appendChild(btnA);
+            btnsContainer.appendChild(btnB);
+        }
+        optionsPanel.classList.remove('hidden');
+    }
+
+    function recordCurrentNodeToHistory() {
+        if (isJumpback) return;
+        const existingIdx = historyNodes.indexOf(currentNodeId);
+        if (existingIdx !== -1) {
+            if (existingIdx !== currentHistoryIdx + 1) {
+                historyNodes = historyNodes.slice(0, existingIdx + 1);
+                currentHistoryIdx = existingIdx;
+            } else {
+                currentHistoryIdx = existingIdx;
+            }
+        } else {
+            if (currentHistoryIdx + 1 < historyNodes.length) historyNodes = historyNodes.slice(0, currentHistoryIdx + 1);
+            historyNodes.push(currentNodeId);
+            currentHistoryIdx = historyNodes.length - 1;
+        }
+        renderHistoryList();
+    }
+
+    function renderHistoryList() {
+        if (!historyContainer) return;
+        if (!historyNodes.length) {
+            historyContainer.innerHTML = '<div class="empty-history">✨ 完成剧情后，点击回溯</div>';
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        historyNodes.forEach((nid, idx) => {
+            const node = VIDEO_GRAPH[nid];
+            if (!node) return;
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            if (idx === currentHistoryIdx) item.classList.add('active');
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'history-title';
+            titleSpan.innerText = `${idx+1}. ${node.title}`;
+            const badge = document.createElement('span');
+            badge.className = 'history-badge';
+            badge.innerText = '回溯';
+            item.appendChild(titleSpan);
+            item.appendChild(badge);
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isTransition) { showMsg("请稍后，剧情切换中..."); return; }
+                jumpToHistoryNode(nid, idx);
+            });
+            frag.appendChild(item);
+        });
+        historyContainer.innerHTML = '';
+        historyContainer.appendChild(frag);
+    }
+
+    async function jumpToHistoryNode(targetNodeId, targetIndex) {
+        if (isTransition) return;
+        isTransition = true;
+        isJumpback = true;
+        hideOptions();
+        const node = ensureNode(targetNodeId);
+        currentNodeId = targetNodeId;
+        sceneLabel.innerText = `↺ ${node.title} (回溯)`;
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+        const seekToEnd = () => {
+            if (video.duration && isFinite(video.duration)) {
+                video.currentTime = Math.max(0, video.duration - 2);
+                video.play().catch(err => showMsg("点击画面播放", false));
+            } else {
+                setTimeout(() => {
+                    if (video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration - 2;
+                        video.play().catch(e=>console.log);
+                    } else {
+                        video.play().catch(e=>console.log);
+                    }
+                }, 300);
+            }
+        };
+        const onLoaded = () => {
+            video.removeEventListener('loadedmetadata', onLoaded);
+            seekToEnd();
+        };
+        video.addEventListener('loadedmetadata', onLoaded);
+        if (video.readyState >= 1) onLoaded();
+        const onEnded = () => {
+            currentHistoryIdx = targetIndex;
+            currentNodeId = targetNodeId;
+            sceneLabel.innerText = node.title;
+            renderHistoryList();
+            isJumpback = false;
+            isTransition = false;
+            // 回溯后：若节点有 autoNext 则直接跳转，否则显示选项
+            if (node.autoNext) {
+                loadNode(node.autoNext);
+            } else {
+                showOptions(true);
+            }
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+        setTimeout(() => {
+            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) {
+                currentEndedHandler();
+            }
+        }, 2000);
+        setTimeout(() => {
+            if (isTransition) { isTransition = false; isJumpback = false; }
+        }, 5000);
+    }
+
+    async function loadNode(nextNodeId) {
+        if (isTransition) return;
+        isTransition = true;
+        hideOptions();
+        const node = ensureNode(nextNodeId);
+        currentNodeId = nextNodeId;
+        sceneLabel.innerText = node.title;
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+
+        const onEnded = async () => {
+            if (!isTransition) {
+                // 正常结束，记录历史（仅当不是自动跳转产生的结束？但这里统一记录，因为只有播放完才会触发）
+                recordCurrentNodeToHistory();
+
+                // 检查当前节点是否配置了 autoNext 自动跳转
+                if (node.autoNext) {
+                    // 直接跳转，不显示选项
+                    loadNode(node.autoNext);
+                } else if (currentNodeId === "v555") {
+                    await showPathModalAsync();
+                    showOptions(false);
+                } else {
+                    showOptions(false);
+                }
+            }
+            isTransition = false;
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+
+        try {
+            await video.play();
+            isTransition = false;
+        } catch (err) {
+            showMsg("轻触视频播放", false);
+            isTransition = false;
+            const once = () => {
+                video.play().catch(e=>console.log);
+                video.removeEventListener('click', once);
+            };
+            video.addEventListener('click', once, { once: true });
+        }
+    }
+
+    function replayCurrent() {
+        if (isTransition) return;
+        hideOptions();
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        const onReplayEnd = () => {
+            if (!isTransition) {
+                recordCurrentNodeToHistory();
+                const node = ensureNode(currentNodeId);
+                if (node.autoNext) {
+                    loadNode(node.autoNext);
+                } else {
+                    showOptions(false);
+                }
+            }
+            video.removeEventListener('ended', onReplayEnd);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onReplayEnd);
+        currentEndedHandler = onReplayEnd;
+        video.currentTime = 0;
+        video.play().catch(err => showMsg("请点击视频重播", false));
+    }
+
+    function startGame() {
+        startOverlay.style.display = 'none';
+        clearHistory();
+        isJumpback = false;
+        isTransition = false;
+        currentNodeId = "v111";
+        const startNode = VIDEO_GRAPH["v111"];
+        sceneLabel.innerText = startNode.title;
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.src = startNode.videoUrl;
+        video.load();
+        const onEnded = () => {
+            recordCurrentNodeToHistory();
+            const node = ensureNode(currentNodeId);
+            if (node.autoNext) {
+                loadNode(node.autoNext);
+            } else {
+                showOptions(false);
+            }
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+        video.play().catch(err => showMsg("点击开始体验", false));
+    }
+
+    let panelVisible = false;
+    toggleHistoryBtn.addEventListener('click', () => {
+        panelVisible = !panelVisible;
+        if (panelVisible) {
+            historySidebar.classList.remove('collapsed');
+            toggleHistoryBtn.innerHTML = '📜 进度回溯 ▲';
+        } else {
+            historySidebar.classList.add('collapsed');
+            toggleHistoryBtn.innerHTML = '📜 进度回溯 ▼';
+        }
+    });
+
+    replayBtn.addEventListener('click', replayCurrent);
+    startBtn.addEventListener('click', startGame);
+    video.addEventListener('click', () => {
+        if (video.paused && !isTransition) video.play().catch(e=>console.log);
+    });
+    historySidebar.classList.add('collapsed');
+    console.log("互动视频已启动 | 修复回溯autoNext错误显示选项，支持单按钮节点（v111只有一个选项）");
+</script>
+</body>
+</html>
