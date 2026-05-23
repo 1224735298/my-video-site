@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 防御点击劫持请通过服务器配置响应头完成 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>行路者·抉择 | 互动视频</title>
+    <style>
+        /* ========== 全局样式重置 ========== */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', Helvetica, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0px;
+        }
+
+        /* 主容器：限制最大宽度，在PC上居中，移动端撑满 */
+        .app-container {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 两行标题区域 */
+        .title-section {
+            text-align: center;
+            margin: 0 16px 4px 16px;
+        }
+        .main-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #FFF9C4, #FFE0A3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            line-height: 1.2;
+        }
+        .sub-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            color: #c9d4ff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            margin-top: 4px;
+            opacity: 0.9;
+        }
+        @supports not (background-clip: text) {
+            .main-title { color: #ffdf8c; }
+        }
+
+        /* 视频卡片：半透明玻璃效果，圆角阴影 */
+        .video-card {
+            background: rgba(20, 28, 40, 0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            margin: 0 1px;
+        }
+
+        /* 视频外容器，保持16:9比例 */
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            cursor: pointer;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* 中央播放/暂停按钮（悬浮圆形图标） */
+        .center-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: rgba(0,0,0,0.65);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+        .center-icon svg {
+            width: 36px;
+            height: 36px;
+            fill: white;
+            stroke: none;
+            display: block;
+        }
+        /* 播放时隐藏中央图标，暂停时显示 */
+        .center-icon.hidden-icon {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* 加载指示器（旋转圈） */
+        .video-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(0,0,0,0.65);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+            z-index: 15;
+            transition: opacity 0.2s ease;
+        }
+        .video-loader.hidden-loader {
+            display: none;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-bar {
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(12, 18, 28, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,240,0.1);
+        }
+
+        .scene-badge {
+            background: #1f2a3e;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #b9e2ff;
+        }
+
+        .replay-btn {
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: #ccd9f0;
+            font-size: 1rem;
+            padding: 6px 12px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.1s;
+        }
+        .replay-btn:active {
+            background: rgba(255,255,255,0.2);
+            transform: scale(0.96);
+        }
+
+        /* AB选项面板 */
+        .options-panel {
+            padding: 16px 16px 20px;
+            background: rgba(18, 24, 36, 0.96);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255,255,240,0.1);
+        }
+
+        .options-title {
+            text-align: center;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: #9aabcf;
+            margin-bottom: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+        }
+
+        /* 选项按钮公共样式 */
+        .option-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: none;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.1s;
+            background: #1e2a3a;
+            color: #eef4ff;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            max-width: 220px;
+        }
+        .option-btn:active { transform: scale(0.96); }
+        .option-a {
+            background: linear-gradient(135deg, #2c3e66, #1a2a48);
+            border-bottom: 3px solid #5f9eff;
+        }
+        .option-b {
+            background: linear-gradient(135deg, #5e3a2c, #3f2a1e);
+            border-bottom: 3px solid #ffa45f;
+        }
+        .option-btn-single {
+            width: 80%;
+            margin: 0 auto;
+            display: block;
+            background: linear-gradient(135deg, #2c3e66, #1a2a48);
+            border-bottom: 3px solid #5f9eff;
+            max-width: 280px;
+        }
+        .hidden { display: none; }
+
+        /* 进度回溯按钮区域 */
+        .history-control {
+            margin-top: 4px;
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 16px;
+        }
+        .toggle-history-btn {
+            background: rgba(30, 40, 60, 0.9);
+            border: none;
+            border-radius: 40px;
+            padding: 8px 18px;
+            color: #ffdfa5;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(8px);
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .toggle-history-btn:active {
+            transform: scale(0.96);
+            background: #2a3a5e;
+        }
+
+        /* 可折叠的历史回溯面板 */
+        .history-sidebar {
+            background: rgba(15, 20, 30, 0.95);
+            backdrop-filter: blur(12px);
+            border-radius: 28px;
+            padding: 14px 12px;
+            margin: 8px 16px 0 16px;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,200,0.15);
+        }
+        .history-sidebar.collapsed { display: none; }
+        .history-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #d9e2ff;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .history-list {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 10px;
+            padding-bottom: 6px;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+        .history-item {
+            background: rgba(25, 32, 48, 0.8);
+            border-radius: 40px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: 0.1s;
+            border-left: 3px solid #4b6a9b;
+        }
+        .history-item.active {
+            background: linear-gradient(135deg, #2a3a5a, #1f2e4a);
+            border-left-color: #ffb347;
+        }
+        .history-item:active { transform: scale(0.96); }
+        .history-title {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #eef3ff;
+        }
+        .history-badge {
+            font-size: 0.65rem;
+            background: #ffb34730;
+            padding: 3px 8px;
+            border-radius: 30px;
+            color: #ffcd94;
+        }
+        .empty-history {
+            text-align: center;
+            color: #7e8eb0;
+            padding: 12px;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+
+        /* 底部说明文字 */
+        .credits {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #8d9dc0;
+            padding: 12px 16px 16px;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            line-height: 1.4;
+        }
+
+        /* 浮动提示条（用于播放/暂停等临时消息） */
+        .toast-msg {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #d32f2fdd;
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            z-index: 300;
+            pointer-events: none;
+        }
+        button { touch-action: manipulation; }
+
+        /* 路径选择模态框（历史路径展示） */
+        .path-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 400;
+        }
+        .path-modal-content {
+            background: #1a2438;
+            border-radius: 32px;
+            width: 85%;
+            max-width: 400px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 20px;
+            border: 1px solid #ffdfa5;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.5);
+        }
+        .path-modal-content h3 {
+            color: #ffdfa5;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+        .path-list {
+            background: #0f1725;
+            border-radius: 24px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .path-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #2a3a5a;
+            color: #eef3ff;
+            font-size: 0.9rem;
+        }
+        .path-item:last-child { border-bottom: none; }
+        .close-modal-btn {
+            background: #ffb347;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1rem;
+            width: 100%;
+            cursor: pointer;
+            color: #1f1a12;
+        }
+        .close-modal-btn:active { transform: scale(0.97); }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="title-section">
+        <div class="main-title">行路者·抉择</div>
+        <div class="sub-title">启程•边界之择</div>
+    </div>
+
+    <div class="video-card">
+        <div class="video-wrapper" id="videoWrapper">
+            <video id="storyVideo" preload="metadata" playsinline webkit-playsinline></video>
+            <div id="centerIcon" class="center-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 5v14l11-7z" fill="white"/>
+                </svg>
+            </div>
+            <div id="videoLoader" class="video-loader hidden-loader">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        <div class="info-bar">
+            <span class="scene-badge" id="sceneNameLabel">🎬 序章</span>
+            <button class="replay-btn" id="replayButton">↻ 重播</button>
+        </div>
+        <div id="optionsPanel" class="options-panel hidden">
+            <div class="options-title">⚡ 选择分支 ⚡</div>
+            <div class="button-group" id="buttonsContainer"></div>
+        </div>
+    </div>
+
+    <div class="history-control">
+        <button id="toggleHistoryBtn" class="toggle-history-btn">📜 进度回溯 ▼</button>
+    </div>
+    <div id="historySidebar" class="history-sidebar collapsed">
+        <div class="history-header"><span>📖 已完成章节 (点击回溯至末尾重选)</span></div>
+        <div id="historyListContainer" class="history-list"><div class="empty-history">✨ 完成剧情后，章节会出现在这里</div></div>
+    </div>
+    <div class="credits">本片根据真实案例改编<br/>致敬每一位在基层默默奉献的党员干部<br/>你的每一次选择，都在书写你的人生</div>
+    <div class="credits">蓬溪县纪委监委</div>
+</div>
+
+<script>
+    // ======================== 安全辅助函数 ========================
+    /**
+     * HTML 实体转义：防止 XSS 攻击。
+     * 本页所有动态内容均使用 textContent，此函数作为防御后备。
+     * @param {string} str - 原始字符串
+     * @returns {string} 转义后的字符串
+     */
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // SVG 图标路径常量（安全，非用户输入）
+    const PLAY_PATH_D = "M8 5v14l11-7z";          // 播放三角形
+    const PAUSE_PATH_D = "M6 5h4v14H6z M14 5h4v14h-4z"; // 暂停双竖线
+
+    // ======================== 视频路径配置（Base64混淆） ========================
+    // 腾讯云COS路径 Base64 编码（原始：https://video-1257968152.cos.ap-chongqing.myqcloud.com/v1/middle/）
+    const encryptedZel = "aHR0cHM6Ly92aWRlby0xMjU3OTY4MTUyLmNvcy5hcC1jaG9uZ3FpbmcubXlxY2xvdWQuY29tL3YxL21pZGRsZS8=";
+    const zel = atob(encryptedZel);   // 解码后得到真实路径前缀
+
+    // 视频源对象：每个节点的完整URL
+    const VIDEO_SOURCES = {
+        v111: zel + "111.mp4",
+        v222: zel + "222.mp4",
+        v222_jj: zel + "222-jj.mp4",
+        v222_js: zel + "222-js.mp4",
+        v222_jjh: zel + "222-jjh.mp4",
+        v333: zel + "333.mp4",
+        v333_js: zel + "333-js.mp4",
+        v333_jj: zel + "333-jj.mp4",
+        v333_jjh: zel + "333-jjh.mp4",
+        v444: zel + "444.mp4",
+        v444_js: zel + "444-js.mp4",
+        v444_jj: zel + "444-jj.mp4",
+        v444_jjh: zel + "444-jjh.mp4",
+        v444_jjh2: zel + "444-jjh2.mp4",
+        v444_jsh: zel + "444-jsh.mp4",
+        v555: zel + "555.mp4"
+    };
+
+    // ======================== 剧情图谱（完全展开，便于修改） ========================
+    /**
+     * VIDEO_GRAPH 定义所有剧情节点。
+     * 每个节点包含：title（显示标题）、videoUrl（视频地址）、options（AB选项列表），
+     * 可选字段 autoNext（若存在，则视频播放完后自动跳转到该节点，不显示选项）。
+     */
+    const VIDEO_GRAPH = {
+        "v111": {
+            title: "🎬 启程•边界之择",
+            videoUrl: VIDEO_SOURCES.v111,
+            options: [
+                { text: "【开启游戏】", nextNode: "v222" }
+            ]
+        },
+        "v222": {
+            title: "🌲 主任的邀约",
+            videoUrl: VIDEO_SOURCES.v222,
+            options: [
+                { text: "A · 接收邀请", nextNode: "v222_js" },
+                { text: "B · 拒绝邀请", nextNode: "v222_jj" }
+            ]
+        },
+        "v222_js": {
+            title: "🚗 接受邀请",
+            videoUrl: VIDEO_SOURCES.v222_js,
+            autoNext: "v333",
+            options: [
+                { text: "A · 重新选择", nextNode: "v222" },
+                { text: "B · 继续前进", nextNode: "v333" }
+            ]
+        },
+        "v222_jj": {
+            title: "🏛️ 拒绝邀请",
+            videoUrl: VIDEO_SOURCES.v222_jj,
+            autoNext: "v222_jjh",
+            options: [
+                { text: "A · 重新选择", nextNode: "v222" },
+                { text: "B · 继续前进", nextNode: "v222_jjh" }
+            ]
+        },
+        "v222_jjh": {
+            title: "🧙 拒绝邀请后",
+            videoUrl: VIDEO_SOURCES.v222_jjh,
+            options: [
+                { text: "继续剧情", nextNode: "v444" }
+            ]
+        },
+        "v333": {
+            title: "🌉 饭局中的礼物",
+            videoUrl: VIDEO_SOURCES.v333,
+            options: [
+                { text: "A · 接受礼品", nextNode: "v333_js" },
+                { text: "B · 拒绝礼品", nextNode: "v333_jj" }
+            ]
+        },
+        "v333_js": {
+            title: "🗝️ 接受礼物",
+            videoUrl: VIDEO_SOURCES.v333_js,
+            autoNext: "v444",
+            options: [
+                { text: "A · 重新选择", nextNode: "v333" },
+                { text: "B · 继续前进", nextNode: "v444" }
+            ]
+        },
+        "v333_jj": {
+            title: "🏆 拒绝礼物",
+            videoUrl: VIDEO_SOURCES.v333_jj,
+            autoNext: "v333_jjh",
+            options: [
+                { text: "A · 重新选择", nextNode: "v333" },
+                { text: "B · 继续前进", nextNode: "v333_jjh" }
+            ]
+        },
+        "v333_jjh": {
+            title: "🌙 拒绝礼物后",
+            videoUrl: VIDEO_SOURCES.v333_jjh,
+            options: [
+                { text: "继续剧情", nextNode: "v444" }
+            ]
+        },
+        "v444": {
+            title: "⛰️ 工地上的心意",
+            videoUrl: VIDEO_SOURCES.v444,
+            options: [
+                { text: "A · 接受纸袋", nextNode: "v444_js" },
+                { text: "B · 拒绝纸袋", nextNode: "v444_jj" }
+            ]
+        },
+        "v444_jjh": {
+            title: "⛰️ 工地上的心意",
+            videoUrl: VIDEO_SOURCES.v444_jjh,
+            options: [
+                { text: "A · 接受纸袋", nextNode: "v444_js" },
+                { text: "B · 拒绝纸袋", nextNode: "v444_jj" }
+            ]
+        },
+        "v444_js": {
+            title: "🌈 接受心意",
+            videoUrl: VIDEO_SOURCES.v444_js,
+            autoNext: "v444_jsh",
+            options: [
+                { text: "A · 重新选择", nextNode: "v444" },
+                { text: "B · 继续前进", nextNode: "v555" }
+            ]
+        },
+        "v444_jsh": {
+            title: "🔁 接受心意后",
+            videoUrl: VIDEO_SOURCES.v444_jsh,
+            options: [
+                { text: "返回重新选择", nextNode: "v444_jjh" }
+            ]
+        },
+        "v444_jj": {
+            title: "📜 拒绝心意",
+            videoUrl: VIDEO_SOURCES.v444_jj,
+            autoNext: "v444_jjh2",
+            options: [
+                { text: "A · 重新选择", nextNode: "v444" },
+                { text: "B · 继续前进", nextNode: "v444_jjh2" }
+            ]
+        },
+        "v444_jjh2": {
+            title: "🔁 拒绝心意后",
+            videoUrl: VIDEO_SOURCES.v444_jjh2,
+            options: [
+                { text: "继续剧情", nextNode: "v555" }
+            ]
+        },
+        "v555": {
+            title: "🌟 下章预告",
+            videoUrl: VIDEO_SOURCES.v555,
+            options: [
+                { text: "A · 本章结束", nextNode: "v111" },
+                { text: "B · 再玩一次", nextNode: "v111" }
+            ]
+        }
+    };
+
+    /**
+     * 根据节点ID获取节点配置，若不存在则返回起始节点 v111
+     * @param {string} nodeId - 节点标识
+     * @returns {object} 节点配置对象
+     */
+    function ensureNode(nodeId) { return VIDEO_GRAPH[nodeId] || VIDEO_GRAPH["v111"]; }
+
+    /**
+     * 获取节点的选项列表（确保至少有默认选项）
+     * @param {string} nodeId - 节点标识
+     * @returns {Array} 选项数组 [{text, nextNode}]
+     */
+    function getOptions(nodeId) {
+        const node = ensureNode(nodeId);
+        let opts = node.options;
+        if (!opts || opts.length === 0) return [{ text: "继续", nextNode: "v111" }];
+        return opts;
+    }
+
+    // ======================== DOM 元素获取 ========================
+    const video = document.getElementById('storyVideo');
+    const videoWrapper = document.getElementById('videoWrapper');
+    const centerIcon = document.getElementById('centerIcon');
+    const videoLoader = document.getElementById('videoLoader');
+    const optionsPanel = document.getElementById('optionsPanel');
+    const btnsContainer = document.getElementById('buttonsContainer');
+    const sceneLabel = document.getElementById('sceneNameLabel');
+    const replayBtn = document.getElementById('replayButton');
+    const historyContainer = document.getElementById('historyListContainer');
+    const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
+    const historySidebar = document.getElementById('historySidebar');
+
+    // ======================== 全局状态变量 ========================
+    let historyNodes = [];          // 已完成的节点ID数组（按顺序）
+    let currentHistoryIdx = -1;    // 当前节点在历史数组中的索引
+    let currentNodeId = "v111";     // 当前正在播放的节点ID
+    let isTransition = false;       // 防止重复切换（锁）
+    let isJumpback = false;         // 是否正在执行回溯操作（避免重复记录历史）
+    let currentEndedHandler = null; // 当前视频的 ended 事件处理器引用
+
+    // 新增：加载状态标志（网络卡顿、缓冲中）
+    let isLoading = false;          // 当前是否处于“加载中”状态（显示转圈）
+
+    // 加载超时和进度监测定时器
+    let loadTimeout = null;
+    let progressTimer = null;
+
+    // ======================== UI 辅助函数 ========================
+    /**
+     * 显示/隐藏加载转圈图标，并互斥控制中央播放/暂停图标。
+     * 当 loading = true 时：显示转圈，隐藏播放/暂停图标。
+     * 当 loading = false 时：隐藏转圈，并根据视频实际暂停/播放状态显示图标。
+     * @param {boolean} loading - 是否处于加载状态
+     */
+    function setLoading(loading) {
+        isLoading = loading;
+        if (loading) {
+            videoLoader.classList.remove('hidden-loader');
+            centerIcon.classList.add('hidden-icon');
+        } else {
+            videoLoader.classList.add('hidden-loader');
+            updateCenterIconVisibility(); // 加载完成后，根据视频状态更新图标
+        }
+    }
+
+    /** 快捷显示加载中（对外暴露） */
+    function showLoader() { setLoading(true); }
+    /** 快捷隐藏加载中（对外暴露） */
+    function hideLoader() { setLoading(false); }
+
+    /**
+     * 更新中央图标（播放/暂停）的显示，仅在非加载状态下有效。
+     * 若处于加载状态，则不显示图标。
+     */
+    function updateCenterIconVisibility() {
+        if (isLoading) return; // 加载中不显示播放/暂停图标
+        const svgElem = centerIcon.querySelector('svg');
+        if (!svgElem) return;
+        if (video.paused) {
+            centerIcon.classList.remove('hidden-icon');
+            let pathElem = svgElem.querySelector('path');
+            if (!pathElem) {
+                pathElem = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                svgElem.appendChild(pathElem);
+            }
+            pathElem.setAttribute('d', PLAY_PATH_D);
+            pathElem.setAttribute('fill', 'white');
+        } else {
+            centerIcon.classList.add('hidden-icon');
+        }
+    }
+
+    /**
+     * 清除所有加载监测相关的计时器（超时和进度监测）
+     */
+    function clearLoadMonitoring() {
+        if (loadTimeout) clearTimeout(loadTimeout);
+        if (progressTimer) clearInterval(progressTimer);
+        loadTimeout = null;
+        progressTimer = null;
+    }
+
+    /**
+     * 开始监测视频加载状态：显示转圈，并设置超时和进度停滞监测。
+     * 若视频长时间无法就绪或缓冲区无增长，会给出网络提示，但保持转圈直至加载成功或失败。
+     */
+    function startLoadMonitoring() {
+        clearLoadMonitoring();
+        showLoader();  // 立即显示转圈
+        // 超时检测：8秒后仍未可播放，提示网络缓慢
+        loadTimeout = setTimeout(() => {
+            if (video.readyState < 2 && !video.ended && !isLoading) {
+                showLoader(); // 确保转圈显示
+                showMsg("网络加载缓慢，请检查网络", false);
+            }
+        }, 8000);
+        // 进度停滞检测：每3秒检查一次缓冲区是否有增长，若无增长且未就绪，提示网络卡顿
+        let lastBuffered = video.buffered.length ? video.buffered.end(0) : 0;
+        progressTimer = setInterval(() => {
+            if (video.readyState >= 2) {
+                hideLoader();           // 已可播放，隐藏转圈
+                clearInterval(progressTimer);
+                progressTimer = null;
+                return;
+            }
+            const currentBuffered = video.buffered.length ? video.buffered.end(0) : 0;
+            if (currentBuffered === lastBuffered && video.readyState < 2 && !video.seeking && !video.ended) {
+                if (isLoading) {
+                    showMsg("网络卡顿，正在缓冲...", false);
+                }
+            }
+            lastBuffered = currentBuffered;
+        }, 5000);
+    }
+
+    /**
+     * 强制重新加载当前视频（用于网络恢复后自动重试）
+     * 保持当前节点不变，重新设置 src 并尝试播放。
+     */
+    function retryLoadCurrentVideo() {
+        if (isTransition) return;
+        const node = ensureNode(currentNodeId);
+        if (!node) return;
+        // 清除之前的 ended 监听
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        // 重新设置视频源并加载
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+        // 重新绑定 ended 事件（确保后续逻辑正常）
+        const onEnded = () => {
+            if (!isTransition) {
+                recordCurrentNodeToHistory();
+                if (node.autoNext) loadNode(node.autoNext);
+                else showOptions(false);
+            }
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+        // 开始加载监测
+        startLoadMonitoring();
+        // 尝试自动播放
+        video.play().catch(err => {
+            showMsg("自动播放失败，请点击视频", false);
+        });
+    }
+
+    /**
+     * 绑定视频加载相关事件，实现转圈的自动显示/隐藏和网络异常提示。
+     */
+    function bindVideoLoadEvents() {
+        video.addEventListener('loadstart', () => { startLoadMonitoring(); });
+        video.addEventListener('waiting', () => { startLoadMonitoring(); });
+        video.addEventListener('stalled', () => {
+            startLoadMonitoring();
+            showMsg("网络卡顿，正在缓冲...", false);
+        });
+        video.addEventListener('canplay', () => { hideLoader(); clearLoadMonitoring(); });
+        video.addEventListener('canplaythrough', () => { hideLoader(); clearLoadMonitoring(); });
+        video.addEventListener('playing', () => { hideLoader(); clearLoadMonitoring(); });
+        video.addEventListener('ended', () => { hideLoader(); clearLoadMonitoring(); });
+        video.addEventListener('error', (e) => {
+            hideLoader();
+            clearLoadMonitoring();
+            let errorMsg = "视频加载失败";
+            if (video.error) {
+                switch (video.error.code) {
+                    case 1: errorMsg = "视频加载被中止"; break;
+                    case 2: errorMsg = "网络错误，无法加载视频"; break;
+                    case 3: errorMsg = "视频解码失败"; break;
+                    case 4: errorMsg = "视频地址无效"; break;
+                    default: errorMsg = "视频加载失败";
+                }
+            }
+            if (!navigator.onLine) errorMsg = "网络已断开，请检查网络连接";
+            showMsg(errorMsg, true);
+        });
+        // 关键修复：网络恢复后，如果当前视频处于加载失败或未就绪状态，自动重试
+        window.addEventListener('online', () => {
+            showMsg("网络已恢复", false);
+            // 检测当前视频是否未正常播放（readyState < 2 且未结束）
+            if (video.readyState < 2 && !video.ended) {
+                // 主动重试加载
+                retryLoadCurrentVideo();
+            } else if (video.paused && video.readyState >= 2) {
+                // 如果视频已就绪但处于暂停，也可以自动播放（可选，根据体验决定）
+                // 不自动播放，保持用户控制
+            }
+        });
+        window.addEventListener('offline', () => {
+            showMsg("网络已断开", true);
+            startLoadMonitoring(); // 离线时也显示转圈，提示等待
+        });
+    }
+
+    /**
+     * 显示临时消息（Toast）
+     * @param {string} msg - 消息内容
+     * @param {boolean} isErr - 是否为错误消息（影响背景色）
+     */
+    function showMsg(msg, isErr = true) {
+        let t = document.querySelector('.toast-msg');
+        if(t) t.remove();
+        let div = document.createElement('div');
+        div.className = 'toast-msg';
+        div.textContent = msg;      // 使用 textContent 防止 XSS
+        if(isErr) div.style.background = "#c62828cc";
+        else div.style.background = "#2c6e2ccc";
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3500);
+    }
+
+    /** 隐藏AB选项面板 */
+    function hideOptions() { optionsPanel.classList.add('hidden'); }
+
+    /** 清空历史记录并刷新UI */
+    function clearHistory() {
+        historyNodes = [];
+        currentHistoryIdx = -1;
+        renderHistoryList();
+    }
+
+    /**
+     * 展示路径模态框：展示用户从开始到当前的所有已选章节
+     * 完全使用 DOM 方法构建，无 innerHTML 注入风险
+     * @returns {Promise} 模态框关闭时 resolve
+     */
+    function showPathModalAsync() {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'path-modal';
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'path-modal-content';
+            const titleH3 = document.createElement('h3');
+            titleH3.textContent = '📜 你选择的道路';
+            const pathListDiv = document.createElement('div');
+            pathListDiv.className = 'path-list';
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'close-modal-btn';
+            closeBtn.textContent = '关闭';
+            
+            if (historyNodes.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'path-item';
+                emptyMsg.textContent = '暂无记录';
+                pathListDiv.appendChild(emptyMsg);
+            } else {
+                for (let i = 0; i < historyNodes.length; i++) {
+                    const nid = historyNodes[i];
+                    const node = VIDEO_GRAPH[nid];
+                    if (node) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'path-item';
+                        itemDiv.textContent = `${i+1}. ${node.title}`;
+                        pathListDiv.appendChild(itemDiv);
+                    }
+                }
+            }
+            contentDiv.appendChild(titleH3);
+            contentDiv.appendChild(pathListDiv);
+            contentDiv.appendChild(closeBtn);
+            modal.appendChild(contentDiv);
+            document.body.appendChild(modal);
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+                resolve();
+            });
+        });
+    }
+
+    /**
+     * 切换视频播放/暂停。
+     * 若当前处于加载状态（转圈中），则忽略点击并提示“加载中”。
+     * 否则正常播放/暂停。
+     */
+    function togglePlayPause() {
+        if (isLoading) {
+            showMsg("视频加载中，请稍后...", false);
+            return;
+        }
+        if (video.paused) {
+            video.play().catch(err => {
+                showMsg("播放失败", false);
+                startLoadMonitoring(); // 播放失败时重新触发加载监测
+            });
+        } else {
+            video.pause();
+        }
+    }
+
+    // ======================== 核心互动逻辑 ========================
+    /**
+     * 跳转到指定节点的末尾（最后2秒），播放完毕后弹出选项或继续 autoNext。
+     * 用于“重新选择”或“回溯”功能。
+     * @param {string} targetNodeId - 目标节点ID
+     * @param {function} callbackAfterEnd - 结束后的可选回调
+     */
+    function jumpToNodeEnd(targetNodeId, callbackAfterEnd = null) {
+        if (isTransition) return;
+        isTransition = true;
+        isJumpback = true;
+        hideOptions();
+        const node = ensureNode(targetNodeId);
+        currentNodeId = targetNodeId;
+        sceneLabel.textContent = `↺ ${node.title} (回溯重选)`;
+
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+
+        const seekToEnd = () => {
+            if (video.duration && isFinite(video.duration)) {
+                video.currentTime = Math.max(0, video.duration - 2);
+                video.play().catch(err => showMsg("点击画面播放", false));
+            } else {
+                setTimeout(() => {
+                    if (video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration - 2;
+                        video.play().catch(e=>console.log);
+                    } else {
+                        video.play().catch(e=>console.log);
+                    }
+                }, 300);
+            }
+        };
+
+        const onLoaded = () => {
+            video.removeEventListener('loadedmetadata', onLoaded);
+            seekToEnd();
+        };
+        video.addEventListener('loadedmetadata', onLoaded);
+        if (video.readyState >= 1) onLoaded();
+
+        const onEnded = () => {
+            sceneLabel.textContent = node.title;
+            isJumpback = false;
+            isTransition = false;
+            if (callbackAfterEnd) callbackAfterEnd();
+            else {
+                if (node.autoNext) loadNode(node.autoNext);
+                else showOptions(true);
+            }
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+
+        setTimeout(() => {
+            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) {
+                currentEndedHandler();
+            }
+        }, 2000);
+        setTimeout(() => {
+            if (isTransition) { isTransition = false; isJumpback = false; }
+        }, 5000);
+    }
+
+    /**
+     * 显示AB选项面板，动态创建按钮。
+     * @param {boolean} skipRecord - 是否跳过将当前节点记录到历史（回溯时使用）
+     */
+    function showOptions(skipRecord = false) {
+        if (isTransition) return;
+        const opts = getOptions(currentNodeId);
+        btnsContainer.innerHTML = ''; // 清空容器（仅清空，无用户数据）
+        
+        const handlePick = async (nextNode, btnText) => {
+            if (isTransition) return;
+            if (!nextNode) nextNode = "v111";
+
+            // 特殊处理 v555 结尾节点：弹出路径模态框并结束
+            if (currentNodeId === "v555") {
+                if (btnText.includes("本章结束")) {
+                    await showPathModalAsync();
+                    return;
+                } else if (btnText.includes("再玩一次")) {
+                    clearHistory();
+                    loadNode("v111");
+                    return;
+                }
+            }
+
+            // 判断是否为“重新选择”或“重新播放”类选项（需跳转末尾重选）
+            const isRechoice = (opts.length === 2 && (btnText.includes("重新选择") || (btnText.includes("重新播放") && nextNode === currentNodeId)));
+            if (isRechoice) {
+                jumpToNodeEnd(nextNode);
+                return;
+            }
+
+            if (!skipRecord && !isJumpback) recordCurrentNodeToHistory();
+            if (nextNode === "v111") clearHistory();
+            loadNode(nextNode);
+        };
+
+        // 根据选项数量创建单按钮或双按钮
+        if (opts.length === 1) {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn option-btn-single';
+            btn.textContent = opts[0].text;
+            btn.onclick = () => handlePick(opts[0].nextNode, opts[0].text);
+            btnsContainer.appendChild(btn);
+        } else {
+            const btnA = document.createElement('button');
+            btnA.className = 'option-btn option-a';
+            btnA.textContent = opts[0].text;
+            const btnB = document.createElement('button');
+            btnB.className = 'option-btn option-b';
+            btnB.textContent = opts[1].text;
+            btnA.onclick = () => handlePick(opts[0].nextNode, opts[0].text);
+            btnB.onclick = () => handlePick(opts[1].nextNode, opts[1].text);
+            btnsContainer.appendChild(btnA);
+            btnsContainer.appendChild(btnB);
+        }
+        optionsPanel.classList.remove('hidden');
+    }
+
+    /**
+     * 将当前节点记录到历史数组中（去重、分支截断）
+     */
+    function recordCurrentNodeToHistory() {
+        if (isJumpback) return;
+        const existingIdx = historyNodes.indexOf(currentNodeId);
+        if (existingIdx !== -1) {
+            if (existingIdx !== currentHistoryIdx + 1) {
+                // 分支回退，截断后续历史
+                historyNodes = historyNodes.slice(0, existingIdx + 1);
+                currentHistoryIdx = existingIdx;
+            } else {
+                currentHistoryIdx = existingIdx;
+            }
+        } else {
+            // 新节点：截断当前位置之后所有历史，再追加
+            if (currentHistoryIdx + 1 < historyNodes.length) historyNodes = historyNodes.slice(0, currentHistoryIdx + 1);
+            historyNodes.push(currentNodeId);
+            currentHistoryIdx = historyNodes.length - 1;
+        }
+        renderHistoryList();
+    }
+
+    /**
+     * 渲染侧边栏历史列表（横向滚动）
+     */
+    function renderHistoryList() {
+        if (!historyContainer) return;
+        if (!historyNodes.length) {
+            historyContainer.innerHTML = '<div class="empty-history">✨ 完成剧情后，点击回溯</div>';
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        historyNodes.forEach((nid, idx) => {
+            const node = VIDEO_GRAPH[nid];
+            if (!node) return;
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            if (idx === currentHistoryIdx) item.classList.add('active');
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'history-title';
+            titleSpan.textContent = `${idx+1}. ${node.title}`;
+            const badge = document.createElement('span');
+            badge.className = 'history-badge';
+            badge.textContent = '回溯';
+            item.appendChild(titleSpan);
+            item.appendChild(badge);
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isTransition) { showMsg("请稍后，剧情切换中..."); return; }
+                jumpToHistoryNode(nid, idx);
+            });
+            frag.appendChild(item);
+        });
+        historyContainer.innerHTML = '';
+        historyContainer.appendChild(frag);
+    }
+
+    /**
+     * 回溯功能：点击历史章节，跳转到该章节视频末尾（最后2秒），播放完毕后弹出选项。
+     * @param {string} targetNodeId - 目标节点ID
+     * @param {number} targetIndex - 在历史数组中的索引
+     */
+    async function jumpToHistoryNode(targetNodeId, targetIndex) {
+        if (isTransition) return;
+        isTransition = true;
+        isJumpback = true;
+        hideOptions();
+        const node = ensureNode(targetNodeId);
+        currentNodeId = targetNodeId;
+        sceneLabel.textContent = `↺ ${node.title} (回溯)`;
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+        const seekToEnd = () => {
+            if (video.duration && isFinite(video.duration)) {
+                video.currentTime = Math.max(0, video.duration - 2);
+                video.play().catch(err => showMsg("点击画面播放", false));
+            } else {
+                setTimeout(() => {
+                    if (video.duration && isFinite(video.duration)) {
+                        video.currentTime = video.duration - 2;
+                        video.play().catch(e=>console.log);
+                    } else {
+                        video.play().catch(e=>console.log);
+                    }
+                }, 300);
+            }
+        };
+        const onLoaded = () => {
+            video.removeEventListener('loadedmetadata', onLoaded);
+            seekToEnd();
+        };
+        video.addEventListener('loadedmetadata', onLoaded);
+        if (video.readyState >= 1) onLoaded();
+        const onEnded = () => {
+            currentHistoryIdx = targetIndex;
+            currentNodeId = targetNodeId;
+            sceneLabel.textContent = node.title;
+            renderHistoryList();
+            isJumpback = false;
+            isTransition = false;
+            if (node.autoNext) loadNode(node.autoNext);
+            else showOptions(true);
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+        setTimeout(() => {
+            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) {
+                currentEndedHandler();
+            }
+        }, 2000);
+        setTimeout(() => {
+            if (isTransition) { isTransition = false; isJumpback = false; }
+        }, 5000);
+    }
+
+    /**
+     * 加载新节点（正常分支跳转）
+     * @param {string} nextNodeId - 目标节点ID
+     * @param {boolean} autoPlay - 是否自动播放（默认为true）
+     */
+    async function loadNode(nextNodeId, autoPlay = true) {
+        if (isTransition) return;
+        isTransition = true;
+        hideOptions();
+        const node = ensureNode(nextNodeId);
+        currentNodeId = nextNodeId;
+        sceneLabel.textContent = node.title;
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.pause();
+        video.src = node.videoUrl;
+        video.load();
+
+        const onEnded = async () => {
+            if (!isTransition) {
+                recordCurrentNodeToHistory();
+                if (node.autoNext) {
+                    loadNode(node.autoNext);
+                } else if (currentNodeId === "v555") {
+                    await showPathModalAsync();
+                    showOptions(false);
+                } else {
+                    showOptions(false);
+                }
+            }
+            isTransition = false;
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+
+        if (autoPlay) {
+            try {
+                await video.play();
+            } catch (err) {
+                showMsg("自动播放失败，请点击视频", false);
+            }
+        }
+        isTransition = false;
+    }
+
+    /**
+     * 重播当前视频（从0开始）
+     */
+    function replayCurrent() {
+        if (isTransition) return;
+        hideOptions();
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        const onReplayEnd = () => {
+            if (!isTransition) {
+                recordCurrentNodeToHistory();
+                const node = ensureNode(currentNodeId);
+                if (node.autoNext) loadNode(node.autoNext, true);
+                else showOptions(false);
+            }
+            video.removeEventListener('ended', onReplayEnd);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onReplayEnd);
+        currentEndedHandler = onReplayEnd;
+        video.currentTime = 0;
+        video.play().catch(err => showMsg("请点击视频重播", false));
+    }
+
+    /**
+     * 初始化游戏：清空历史，加载片头视频，暂停状态，绑定播放/暂停事件
+     */
+    function initGame() {
+        clearHistory();
+        isJumpback = false;
+        isTransition = false;
+        currentNodeId = "v111";
+        const startNode = VIDEO_GRAPH["v111"];
+        sceneLabel.textContent = startNode.title;
+        if (currentEndedHandler) {
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        video.src = startNode.videoUrl;
+        video.load();
+        video.pause();
+
+        const onEnded = () => {
+            recordCurrentNodeToHistory();
+            const node = ensureNode(currentNodeId);
+            if (node.autoNext) loadNode(node.autoNext, true);
+            else showOptions(false);
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+        
+        video.addEventListener('play', () => updateCenterIconVisibility());
+        video.addEventListener('pause', () => updateCenterIconVisibility());
+        updateCenterIconVisibility();
+    }
+
+    // ======================== 事件绑定 ========================
+    let panelVisible = false;
+    toggleHistoryBtn.addEventListener('click', () => {
+        panelVisible = !panelVisible;
+        if (panelVisible) {
+            historySidebar.classList.remove('collapsed');
+            toggleHistoryBtn.textContent = '📜 进度回溯 ▲';
+        } else {
+            historySidebar.classList.add('collapsed');
+            toggleHistoryBtn.textContent = '📜 进度回溯 ▼';
+        }
+    });
+
+    videoWrapper.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePlayPause();
+    });
+    replayBtn.addEventListener('click', replayCurrent);
+    historySidebar.classList.add('collapsed');
+
+    // 绑定视频加载事件和网络检测
+    bindVideoLoadEvents();
+
+    // ======================== 启动应用程序 ========================
+    initGame();
+    console.log("互动视频已启动 | 增强加载监测：断网恢复后自动重试，转圈持续直到播放");
+</script>
+</body>
+</html>
