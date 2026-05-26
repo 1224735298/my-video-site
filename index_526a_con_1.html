@@ -474,7 +474,7 @@
 <div class="app-container">
     <div class="title-section">
         <div class="main-title">行路者·抉择</div>
-        <div class="sub-title">启程•边界之择</div>
+        <div class="sub-title">第一章&nbsp;&nbsp;启程•边界之择</div>
     </div>
     <div class="video-card">
         <div class="video-wrapper" id="videoWrapper">
@@ -532,7 +532,7 @@ const VIDEO_SOURCES = {
     v222_js: zel + "222-js.mp4",
     v222_jjh: zel + "222-jjh.mp4",
     v333: zel + "333.mp4",
-    v333_js_re: zel + "333-js-re.mp4",
+    v333_js_con: zel + "333-js-con.mp4",
     v333_jsh: zel + "333-jsh.mp4",
     v333_jj: zel + "333-jj.mp4",
     v333_jjh: zel + "333-jjh.mp4",
@@ -566,12 +566,12 @@ const VIDEO_GRAPH = {
     "v333": {
         title: "🌉 饭局中的礼物",
         videoUrl: VIDEO_SOURCES.v333,
-        options: [{text: "A · 接受礼品", nextNode: "v333_js_re"}, {text: "B · 拒绝礼品", nextNode: "v333_jj"}]
+        options: [{text: "A · 接受礼品", nextNode: "v333_js_con"}, {text: "B · 拒绝礼品", nextNode: "v333_jj"}]
     },
-    "v333_js_re": {
+    "v333_js_con": {
         title: "🗝️ 接受礼物",
-        videoUrl: VIDEO_SOURCES.v333_js_re,
-        options: [{text: "返回重新选择", nextNode: "v333", type: "rechoice"}]
+        videoUrl: VIDEO_SOURCES.v333_js_con,
+        options: [{text: "继续剧情", nextNode: "v444"}]
     },
     "v333_jj": {title: "🏆 拒绝礼物", videoUrl: VIDEO_SOURCES.v333_jj, autoNext: "v333_jjh"},
     "v333_jjh": {
