@@ -523,7 +523,7 @@
             <button class="replay-btn" id="replayButton">↻重播</button>
         </div>
         <div id="optionsPanel" class="options-panel hidden">
-            <div class="options-title">⚡选择分支⚡</div>
+            <div class="options-title">⚡抉择时刻⚡</div>
             <div class="button-group" id="buttonsContainer"></div>
         </div>
     </div>
@@ -558,7 +558,7 @@
     const encryptedZel = "aHR0cHM6Ly92aWRlby0xMjU3OTY4MTUyLmNvcy5hcC1jaG9uZ3FpbmcubXlxY2xvdWQuY29tL3YxL21pZGRsZS8=";
     const zel = atob(encryptedZel);
     const VIDEO_SOURCES = {
-        v111: zel + "111.mp4",
+        v111: zel + "111-530.mp4",
         v222: zel + "222.mp4",
         v222_jj: zel + "222-jj.mp4",
         v222_js: zel + "222-js.mp4",
@@ -582,7 +582,7 @@
             videoUrl: VIDEO_SOURCES.v111,
             isStart: true,
             options: [
-                { text: "【开启游戏】", nextNode: "v222", guide: true }   // 新增 guide 属性，用于触发手指动画
+                { text: "【开启抉择】", nextNode: "v222", guide: true }   // 新增 guide 属性，用于触发手指动画
             ]
         },
         "v222": {
