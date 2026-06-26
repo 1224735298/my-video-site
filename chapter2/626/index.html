@@ -6,8 +6,8 @@
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>行路者·抉择|互动视频</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet"/>
     <style>
-        /* ===== 样式保持不变 ===== */
         * {
             box-sizing: border-box;
             user-select: none;
@@ -83,62 +83,52 @@
             aspect-ratio: 16/9;
         }
 
-        video {
+        .video-js {
             width: 100%;
             height: 100%;
+        }
+
+        .video-js .vjs-tech {
             object-fit: contain;
-            display: block
         }
 
-        /* ===== 隐藏默认控件中不需要的部分 ===== */
-        video::-webkit-media-controls-volume-slider,
-        video::-webkit-media-controls-volume-control-container {
-            display: none !important;
-        }
-        video::-webkit-media-controls-picture-in-picture-button {
-            display: none !important;
-        }
-        video::-webkit-media-controls-fullscreen-button {
-            display: none !important;
-        }
-        video::-internal-media-controls-download-button {
-            display: none !important;
-        }
-        video::-webkit-media-controls-time-remaining-display {
+        /* 隐藏不需要的控件 */
+        .video-js .vjs-volume-control,
+        .video-js .vjs-fullscreen-control,
+        .video-js .vjs-picture-in-picture-control,
+        .video-js .vjs-remaining-time,
+        .video-js .vjs-playback-rate,
+        .video-js .vjs-chapters-button,
+        .video-js .vjs-descriptions-button,
+        .video-js .vjs-subtitles-button,
+        .video-js .vjs-captions-button,
+        .video-js .vjs-audio-button {
             display: none !important;
         }
 
-        .center-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70px;
-            height: 70px;
-            background: rgba(0, 0, 0, 0.65);
-            border-radius: 50%;
+        .video-js .vjs-play-control {
+            flex: 0 0 auto;
+        }
+
+        .video-js .vjs-progress-control {
+            flex: 1 1 70% !important;
+            min-width: 60% !important;
+        }
+
+        .video-js .vjs-control-bar {
+            padding: 0 8px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(6px);
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-            z-index: 10
         }
 
-        .center-icon svg {
-            width: 36px;
-            height: 36px;
-            fill: white;
-            stroke: none;
-            display: block
+        /* 大播放按钮居中 */
+        .video-js .vjs-big-play-button {
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
         }
 
-        .center-icon.hidden-icon {
-            opacity: 0;
-            visibility: hidden
-        }
-
+        /* 加载指示器 */
         .video-loader {
             position: absolute;
             top: 50%;
@@ -195,26 +185,6 @@
             font-size: 0.7rem;
             font-weight: 500;
             color: #b9e2ff
-        }
-
-        .replay-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: none;
-            color: #ccd9f0;
-            font-size: 1rem;
-            padding: 6px 12px;
-            border-radius: 40px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: 0.1s
-        }
-
-        .replay-btn:active {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(0.96)
         }
 
         .options-panel {
@@ -287,7 +257,7 @@
             pointer-events: none;
             z-index: 20;
             animation: fingerTap 1.2s ease-in-out infinite;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
         }
 
         @keyframes fingerTap {
@@ -525,23 +495,15 @@
     </div>
     <div class="video-card">
         <div class="video-wrapper" id="videoWrapper">
-            <!-- 关键修改：添加 disablepictureinpicture 禁用画中画，添加 controls 和 controlslist -->
-            <video id="storyVideo" preload="metadata" playsinline webkit-playsinline
-                   controls
-                   controlslist="nofullscreen nodownload noremoteplayback"
-                   disablepictureinpicture>
+            <video id="storyVideo" class="video-js vjs-default-skin" playsinline webkit-playsinline
+                   preload="metadata" muted="false">
             </video>
-            <div id="centerIcon" class="center-icon">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 5v14l11-7z" fill="white"/>
-                </svg>
-            </div>
             <div id="videoLoader" class="video-loader hidden-loader">
                 <div class="spinner"></div>
             </div>
         </div>
-        <div class="info-bar"><span class="scene-badge" id="sceneNameLabel">🎬序章</span>
-            <button class="replay-btn" id="replayButton">↻重播</button>
+        <div class="info-bar">
+            <span class="scene-badge" id="sceneNameLabel">🎬序章</span>
         </div>
         <div id="optionsPanel" class="options-panel hidden">
             <div class="options-title">⚡选择分支⚡</div>
@@ -552,7 +514,7 @@
         <button id="toggleHistoryBtn" class="toggle-history-btn">📜进度回溯▼</button>
     </div>
     <div id="historySidebar" class="history-sidebar collapsed">
-        <div class="history-header"><span>📖已完成章节(点击回溯至末尾重选)</span></div>
+        <div class="history-header"><span>📖已完成章节(点击回溯至开头重选)</span></div>
         <div id="historyListContainer" class="history-list">
             <div class="empty-history">✨完成剧情后，章节会出现在这里</div>
         </div>
@@ -561,8 +523,9 @@
     </div>
     <div class="credits">蓬溪县纪委监委</div>
 </div>
+
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
 <script>
-    // ======================== 原有 JavaScript 保持不变 ========================
     function escapeHtml(str) {
         if (!str) return '';
         return str.replace(/[&<>]/g, function (m) {
@@ -575,8 +538,6 @@
         })
     }
 
-    const PLAY_PATH_D = "M8 5v14l11-7z";
-    const PAUSE_PATH_D = "M6 5h4v14H6z M14 5h4v14h-4z";
     const encryptedZel = "aHR0cHM6Ly92aWRlby0xMjU3OTY4MTUyLmNvcy5hcC1jaG9uZ3FpbmcubXlxY2xvdWQuY29tL3YyL2xvdy8=";
     const zel = atob(encryptedZel);
     const VIDEO_SOURCES = {
@@ -585,33 +546,26 @@
         v111_xz: zel + "111_xz.mp4",
         v111_ss: zel + "111_ss.mp4",
         v111_jj: zel + "111_jj.mp4",
-
         v222: zel + "222.mp4",
         v222_xz: zel + "222_xz.mp4",
         v222_ss: zel + "222_ss.mp4",
         v222_jj: zel + "222_jj.mp4",
-
         v333: zel + "333.mp4",
         v333_xz: zel + "333_xz.mp4",
         v333_ss: zel + "333_ss.mp4",
         v333_jj: zel + "333_jj.mp4",
-
         v444: zel + "444.mp4",
         v444_xz: zel + "444_xz.mp4",
         v444_ss: zel + "444_ss.mp4",
         v444_jj: zel + "444_jj.mp4",
-
-        v555: zel + "555.mp4",
-
+        v555: zel + "555.mp4"
     };
     const VIDEO_GRAPH = {
         "pt": {
             title: "🎬 立身•为民之择",
             videoUrl: VIDEO_SOURCES.pt,
             isStart: true,
-            options: [
-                { text: "【开启游戏】", nextNode: "v111", guide: true }
-            ]
+            options: [{text: "【开启游戏】", nextNode: "v111", guide: true}]
         },
         "v111": {
             title: "似是而非的数据",
@@ -620,7 +574,6 @@
         },
         "v111_jj": {title: "篡改数据", videoUrl: VIDEO_SOURCES.v111_jj, autoNext: "v222"},
         "v111_ss": {title: "依规上报", videoUrl: VIDEO_SOURCES.v111_ss, autoNext: "v222"},
-
         "v222": {
             title: "浮沉消弭的底色",
             videoUrl: VIDEO_SOURCES.v222,
@@ -632,18 +585,31 @@
             videoUrl: VIDEO_SOURCES.v222_jj,
             options: [{text: "A · 热心办理", nextNode: "v333_ss"}, {text: "B · 一视同仁", nextNode: "v333_jj"}]
         },
-
-        "v333_jj": {title: "一视同仁", videoUrl: VIDEO_SOURCES.v333_jj, options: [{text: "返回重新选择", nextNode: "v222", type: "rechoice"}]},
-        "v333_ss": {title: "热心办理", videoUrl: VIDEO_SOURCES.v333_ss, options: [{text: "返回重新选择", nextNode: "v222", type: "rechoice"}]},
-
+        "v333_jj": {
+            title: "一视同仁",
+            videoUrl: VIDEO_SOURCES.v333_jj,
+            options: [{text: "返回重新选择", nextNode: "v222", type: "rechoice"}]
+        },
+        "v333_ss": {
+            title: "热心办理",
+            videoUrl: VIDEO_SOURCES.v333_ss,
+            options: [{text: "返回重新选择", nextNode: "v222", type: "rechoice"}]
+        },
         "v444": {
             title: "似曾相识的邀请",
             videoUrl: VIDEO_SOURCES.v444,
             options: [{text: "A · 欣然应邀", nextNode: "v444_ss"}, {text: "B · 果断拒绝", nextNode: "v444_jj"}]
         },
-        "v444_jj": {title: "果断拒绝", videoUrl: VIDEO_SOURCES.v444_jj, options: [{text: "继续剧情", nextNode: "v555"}]},
-        "v444_ss": {title: "🌲 主任的邀约", videoUrl: VIDEO_SOURCES.v444_ss, options: [{text: "返回重新选择", nextNode: "v444", type: "rechoice"}]},
-
+        "v444_jj": {
+            title: "果断拒绝",
+            videoUrl: VIDEO_SOURCES.v444_jj,
+            options: [{text: "继续剧情", nextNode: "v555"}]
+        },
+        "v444_ss": {
+            title: "🌲 主任的邀约",
+            videoUrl: VIDEO_SOURCES.v444_ss,
+            options: [{text: "返回重新选择", nextNode: "v444", type: "rechoice"}]
+        },
         "v555": {
             title: "🌟 下章预告",
             videoUrl: VIDEO_SOURCES.v555,
@@ -681,12 +647,10 @@
 
     const video = document.getElementById('storyVideo');
     const videoWrapper = document.getElementById('videoWrapper');
-    const centerIcon = document.getElementById('centerIcon');
     const videoLoader = document.getElementById('videoLoader');
     const optionsPanel = document.getElementById('optionsPanel');
     const btnsContainer = document.getElementById('buttonsContainer');
     const sceneLabel = document.getElementById('sceneNameLabel');
-    const replayBtn = document.getElementById('replayButton');
     const historyContainer = document.getElementById('historyListContainer');
     const toggleHistoryBtn = document.getElementById('toggleHistoryBtn');
     const historySidebar = document.getElementById('historySidebar');
@@ -699,15 +663,14 @@
     let isLoading = false;
     let loadTimeout = null;
     let progressTimer = null;
+    let player = null;
 
     function setLoading(loading) {
         isLoading = loading;
         if (loading) {
             videoLoader.classList.remove('hidden-loader');
-            centerIcon.classList.add('hidden-icon')
         } else {
             videoLoader.classList.add('hidden-loader');
-            updateCenterIconVisibility()
         }
     }
 
@@ -717,24 +680,6 @@
 
     function hideLoader() {
         setLoading(false)
-    }
-
-    function updateCenterIconVisibility() {
-        if (isLoading) return;
-        const svgElem = centerIcon.querySelector('svg');
-        if (!svgElem) return;
-        if (video.paused) {
-            centerIcon.classList.remove('hidden-icon');
-            let pathElem = svgElem.querySelector('path');
-            if (!pathElem) {
-                pathElem = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                svgElem.appendChild(pathElem)
-            }
-            pathElem.setAttribute('d', PLAY_PATH_D);
-            pathElem.setAttribute('fill', 'white')
-        } else {
-            centerIcon.classList.add('hidden-icon')
-        }
     }
 
     function clearLoadMonitoring() {
@@ -773,22 +718,32 @@
         if (isTransition) return;
         const node = ensureNode(currentNodeId);
         if (!node) return;
-        if (currentEndedHandler) video.removeEventListener('ended', currentEndedHandler);
-        video.pause();
-        video.src = node.videoUrl;
-        video.load();
-        const onEnded = () => {
-            if (!isTransition) {
-                recordCurrentNodeToHistory();
-                if (node.autoNext) loadNode(node.autoNext); else showOptions(false)
-            }
-            video.removeEventListener('ended', onEnded);
-            currentEndedHandler = null
-        };
-        video.addEventListener('ended', onEnded);
-        currentEndedHandler = onEnded;
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        if (player) {
+            player.src(node.videoUrl);
+            player.load();
+            player.play().catch(err => showMsg("自动播放失败，请点击视频", false));
+        } else {
+            video.pause();
+            video.src = node.videoUrl;
+            video.load();
+            video.play().catch(err => showMsg("自动播放失败，请点击视频", false));
+        }
         startLoadMonitoring();
-        video.play().catch(err => showMsg("自动播放失败，请点击视频", false))
+    }
+
+    function bindEndedHandler(handler) {
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+        }
+        currentEndedHandler = handler;
+        if (player) player.on('ended', handler);
+        video.addEventListener('ended', handler);
     }
 
     function bindVideoLoadEvents() {
@@ -807,10 +762,6 @@
             clearLoadMonitoring()
         });
         video.addEventListener('playing', () => {
-            hideLoader();
-            clearLoadMonitoring()
-        });
-        video.addEventListener('ended', () => {
             hideLoader();
             clearLoadMonitoring()
         });
@@ -912,19 +863,29 @@
         })
     }
 
-    // 切换播放/暂停
     function togglePlayPause() {
         if (isLoading) {
             showMsg("视频加载中，请稍后...", false);
             return
         }
-        if (video.paused) {
-            video.play().catch(err => {
-                showMsg("播放失败", false);
-                startLoadMonitoring()
-            })
+        if (player) {
+            if (player.paused()) {
+                player.play().catch(err => {
+                    showMsg("播放失败", false);
+                    startLoadMonitoring()
+                });
+            } else {
+                player.pause();
+            }
         } else {
-            video.pause()
+            if (video.paused) {
+                video.play().catch(err => {
+                    showMsg("播放失败", false);
+                    startLoadMonitoring()
+                })
+            } else {
+                video.pause()
+            }
         }
     }
 
@@ -936,20 +897,43 @@
         const node = ensureNode(targetNodeId);
         currentNodeId = targetNodeId;
         sceneLabel.textContent = `↺${node.title}(回溯重选)`;
-        if (currentEndedHandler) video.removeEventListener('ended', currentEndedHandler);
-        video.pause();
-        video.src = node.videoUrl;
-        video.load();
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        if (player) {
+            player.src(node.videoUrl);
+            player.load();
+        } else {
+            video.pause();
+            video.src = node.videoUrl;
+            video.load();
+        }
         const seekToEnd = () => {
             if (video.duration && isFinite(video.duration)) {
                 video.currentTime = Math.max(0, video.duration - 2);
-                video.play().catch(err => showMsg("点击画面播放", false))
+                if (player) {
+                    player.play().catch(err => showMsg("点击画面播放", false));
+                } else {
+                    video.play().catch(err => showMsg("点击画面播放", false));
+                }
             } else {
                 setTimeout(() => {
                     if (video.duration && isFinite(video.duration)) {
                         video.currentTime = video.duration - 2;
-                        video.play().catch(e => console.log)
-                    } else video.play().catch(e => console.log)
+                        if (player) {
+                            player.play().catch(e => console.log);
+                        } else {
+                            video.play().catch(e => console.log);
+                        }
+                    } else {
+                        if (player) {
+                            player.play().catch(e => console.log);
+                        } else {
+                            video.play().catch(e => console.log);
+                        }
+                    }
                 }, 300)
             }
         };
@@ -966,13 +950,15 @@
             if (callbackAfterEnd) callbackAfterEnd(); else {
                 if (node.autoNext) loadNode(node.autoNext); else showOptions(true)
             }
+            if (player) player.off('ended', onEnded);
             video.removeEventListener('ended', onEnded);
-            currentEndedHandler = null
+            currentEndedHandler = null;
         };
-        video.addEventListener('ended', onEnded);
-        currentEndedHandler = onEnded;
+        bindEndedHandler(onEnded);
         setTimeout(() => {
-            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) currentEndedHandler()
+            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) {
+                if (currentEndedHandler) currentEndedHandler();
+            }
         }, 2000);
         setTimeout(() => {
             if (isTransition) {
@@ -1012,7 +998,6 @@
             if (ensureNode(nextNode).isStart === true) clearHistory();
             loadNode(nextNode)
         };
-
         if (opts.length === 1) {
             const btn = document.createElement('button');
             btn.className = 'option-btn option-btn-single';
@@ -1118,26 +1103,30 @@
         const node = ensureNode(targetNodeId);
         currentNodeId = targetNodeId;
         sceneLabel.textContent = `↺${node.title}(回溯)`;
-        if (currentEndedHandler) video.removeEventListener('ended', currentEndedHandler);
-        video.pause();
-        video.src = node.videoUrl;
-        video.load();
-        const seekToEnd = () => {
-            if (video.duration && isFinite(video.duration)) {
-                video.currentTime = Math.max(0, video.duration - 2);
-                video.play().catch(err => showMsg("点击画面播放", false))
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        if (player) {
+            player.src(node.videoUrl);
+            player.load();
+        } else {
+            video.pause();
+            video.src = node.videoUrl;
+            video.load();
+        }
+        const seekToStart = () => {
+            video.currentTime = 0;
+            if (player) {
+                player.play().catch(err => showMsg("点击画面播放", false));
             } else {
-                setTimeout(() => {
-                    if (video.duration && isFinite(video.duration)) {
-                        video.currentTime = video.duration - 2;
-                        video.play().catch(e => console.log)
-                    } else video.play().catch(e => console.log)
-                }, 300)
+                video.play().catch(err => showMsg("点击画面播放", false));
             }
         };
         const onLoaded = () => {
             video.removeEventListener('loadedmetadata', onLoaded);
-            seekToEnd()
+            seekToStart()
         };
         video.addEventListener('loadedmetadata', onLoaded);
         if (video.readyState >= 1) onLoaded();
@@ -1149,13 +1138,15 @@
             isJumpback = false;
             isTransition = false;
             if (node.autoNext) loadNode(node.autoNext); else showOptions(true);
+            if (player) player.off('ended', onEnded);
             video.removeEventListener('ended', onEnded);
-            currentEndedHandler = null
+            currentEndedHandler = null;
         };
-        video.addEventListener('ended', onEnded);
-        currentEndedHandler = onEnded;
+        bindEndedHandler(onEnded);
         setTimeout(() => {
-            if (isTransition && video.currentTime >= video.duration - 0.2 && !video.ended && currentEndedHandler) currentEndedHandler()
+            if (isTransition && video.ended && currentEndedHandler) {
+                if (currentEndedHandler) currentEndedHandler();
+            }
         }, 2000);
         setTimeout(() => {
             if (isTransition) {
@@ -1172,10 +1163,19 @@
         const node = ensureNode(nextNodeId);
         currentNodeId = nextNodeId;
         sceneLabel.textContent = node.title;
-        if (currentEndedHandler) video.removeEventListener('ended', currentEndedHandler);
-        video.pause();
-        video.src = node.videoUrl;
-        video.load();
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        if (player) {
+            player.src(node.videoUrl);
+            player.load();
+        } else {
+            video.pause();
+            video.src = node.videoUrl;
+            video.load();
+        }
         const onEnded = async () => {
             if (!isTransition) {
                 recordCurrentNodeToHistory();
@@ -1189,38 +1189,23 @@
                 }
             }
             isTransition = false;
+            if (player) player.off('ended', onEnded);
             video.removeEventListener('ended', onEnded);
-            currentEndedHandler = null
+            currentEndedHandler = null;
         };
-        video.addEventListener('ended', onEnded);
-        currentEndedHandler = onEnded;
+        bindEndedHandler(onEnded);
         if (autoPlay) {
             try {
-                await video.play()
+                if (player) {
+                    await player.play();
+                } else {
+                    await video.play();
+                }
             } catch (err) {
                 showMsg("自动播放失败，请点击视频", false)
             }
         }
         isTransition = false
-    }
-
-    function replayCurrent() {
-        if (isTransition) return;
-        hideOptions();
-        if (currentEndedHandler) video.removeEventListener('ended', currentEndedHandler);
-        const onReplayEnd = () => {
-            if (!isTransition) {
-                recordCurrentNodeToHistory();
-                const node = ensureNode(currentNodeId);
-                if (node.autoNext) loadNode(node.autoNext, true); else showOptions(false)
-            }
-            video.removeEventListener('ended', onReplayEnd);
-            currentEndedHandler = null
-        };
-        video.addEventListener('ended', onReplayEnd);
-        currentEndedHandler = onReplayEnd;
-        video.currentTime = 0;
-        video.play().catch(err => showMsg("请点击视频重播", false))
     }
 
     function initGame() {
@@ -1231,22 +1216,28 @@
         currentNodeId = startNodeId;
         const startNode = VIDEO_GRAPH[startNodeId];
         sceneLabel.textContent = startNode.title;
-        if (currentEndedHandler) video.removeEventListener('ended', currentEndedHandler);
-        video.src = startNode.videoUrl;
-        video.load();
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+        if (player) {
+            player.src(startNode.videoUrl);
+            player.load();
+        } else {
+            video.src = startNode.videoUrl;
+            video.load();
+        }
         video.pause();
         const onEnded = () => {
             recordCurrentNodeToHistory();
             const node = ensureNode(currentNodeId);
             if (node.autoNext) loadNode(node.autoNext, true); else showOptions(false);
+            if (player) player.off('ended', onEnded);
             video.removeEventListener('ended', onEnded);
-            currentEndedHandler = null
+            currentEndedHandler = null;
         };
-        video.addEventListener('ended', onEnded);
-        currentEndedHandler = onEnded;
-        video.addEventListener('play', updateCenterIconVisibility);
-        video.addEventListener('pause', updateCenterIconVisibility);
-        updateCenterIconVisibility()
+        bindEndedHandler(onEnded);
     }
 
     let panelVisible = false;
@@ -1261,20 +1252,37 @@
         }
     });
 
-    // ===== 修复移动端点击视频无法切换播放/暂停 =====
-    // 使用 pointerup 事件，兼容 PC 和移动端，且能区分点击视频本身与点击控件
-    video.addEventListener('pointerup', function(e) {
-        // 只有点击目标为视频元素本身时才触发切换（控件点击不会触发）
-        if (e.target === this) {
-            togglePlayPause();
-        }
+    // ===== 初始化 Video.js（包含 playToggle 和 progressControl） =====
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.playerInstance) return;
+        const p = videojs('storyVideo', {
+            controls: true,
+            autoplay: false,
+            muted: false,
+            bigPlayButton: true,
+            controlBar: {
+                children: [
+                    'playToggle',      // 播放/暂停按钮
+                    'progressControl'  // 进度条
+                ]
+            },
+            playbackRates: [],
+            fullscreen: {options: {navigationUI: 'hide'}},
+            enablePictureInPicture: false,
+            preload: 'metadata',
+            userActions: {hotkeys: true}
+        });
+        player = p;
+        window.playerInstance = p;
+        p.ready(function () {
+            console.log('Video.js 已就绪');
+            bindVideoLoadEvents();
+            initGame();
+            historySidebar.classList.add('collapsed');
+        });
     });
 
-    replayBtn.addEventListener('click', replayCurrent);
-    historySidebar.classList.add('collapsed');
-    bindVideoLoadEvents();
-    initGame();
-    console.log("互动视频已启动 | 画中画已禁用，点击视频可切换播放/暂停（兼容移动端）");
+    console.log("互动视频已启动 | 播放按钮+进度条，大播放按钮居中，回溯从头播放");
 </script>
 </body>
 </html>
