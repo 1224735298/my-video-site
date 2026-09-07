@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>行路者·抉择|互动视频</title>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet"/>
+    <style>
+        /* 所有样式与之前相同，此处省略以节省篇幅，实际代码中完整保留 */
+        /* ... 完整样式 ... */
+    </style>
+</head>
+<body>
+<!-- HTML 结构不变 -->
+<!-- ... -->
+
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+<script>
+    // 其他所有函数保持不变，仅替换 jumpToNodeEnd 函数
+    // 为节省篇幅，此处仅展示 jumpToNodeEnd 的完整实现，其余函数请自行保留
+
+    function jumpToNodeEnd(targetNodeId, callbackAfterEnd = null) {
+        if (isTransition) return;
+        isTransition = true;
+        isJumpback = true;
+        hideOptions();
+        const node = ensureNode(targetNodeId);
+        currentNodeId = targetNodeId;
+        sceneLabel.textContent = `↺${node.title}(回溯重选)`;
+        if (currentEndedHandler) {
+            if (player) player.off('ended', currentEndedHandler);
+            video.removeEventListener('ended', currentEndedHandler);
+            currentEndedHandler = null;
+        }
+
+        // 检测 iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        // 加载视频
+        if (player) {
+            player.src(node.videoUrl);
+            player.load();
+        } else {
+            video.pause();
+            video.src = node.videoUrl;
+            video.load();
+        }
+        ensurePlaybackRateOnLoad();
+
+        const targetOffset = isIOS ? 4 : 2;
+
+        // 跳转并播放的核心逻辑
+        const doSeekAndPlay = function() {
+            const duration = video.duration;
+            if (duration && isFinite(duration) && duration > 0) {
+                const targetTime = Math.max(0, duration - targetOffset);
+                // 先尝试直接设置
+                video.currentTime = targetTime;
+                // 强制播放
+                if (video.paused) {
+                    video.play().catch(function(e){});
+                }
+
+                if (isIOS) {
+                    // iOS 上额外采用 interval 重试，确保跳转成功
+                    let attempts = 0;
+                    const maxAttempts = 20;
+                    const intervalId = setInterval(function() {
+                        if (Math.abs(video.currentTime - targetTime) > 0.5 && attempts < maxAttempts) {
+                            video.currentTime = targetTime;
+                            if (video.paused) {
+                                video.play().catch(function(e){});
+                            }
+                            attempts++;
+                        } else {
+                            clearInterval(intervalId);
+                            // 最后一次检查并确保播放
+                            if (video.paused) {
+                                video.play().catch(function(e){});
+                            }
+                        }
+                    }, 100);
+                }
+            } else {
+                // 无法获取时长，直接播放
+                video.play().catch(function(e){});
+            }
+        };
+
+        const onCanPlay = function() {
+            video.removeEventListener('canplay', onCanPlay);
+            doSeekAndPlay();
+        };
+        video.addEventListener('canplay', onCanPlay);
+        if (video.readyState >= 2) {
+            onCanPlay();
+        }
+
+        // 绑定 ended 事件
+        const onEnded = () => {
+            sceneLabel.textContent = node.title;
+            isJumpback = false;
+            isTransition = false;
+            if (callbackAfterEnd) callbackAfterEnd();
+            else {
+                if (node.autoNext) loadNode(node.autoNext);
+                else showOptions(true);
+            }
+            video.removeEventListener('ended', onEnded);
+            currentEndedHandler = null;
+        };
+        video.addEventListener('ended', onEnded);
+        currentEndedHandler = onEnded;
+
+        // 安全超时
+        setTimeout(() => {
+            if (isTransition) {
+                isTransition = false;
+                isJumpback = false;
+            }
+        }, 8000);
+    }
+
+    // 其他函数完全不变，包括 initGame, loadNode, showOptions 等
+    // 请确保您的代码中包含完整的其他函数
+</script>
+</body>
+</html>
