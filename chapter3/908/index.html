@@ -36,7 +36,6 @@
             position: relative;
         }
 
-        /* 标题区域 */
         .title-section {
             text-align: center;
             margin: 0 16px 4px 16px
@@ -70,7 +69,6 @@
             }
         }
 
-        /* 视频卡片 */
         .video-card {
             background: rgba(20, 28, 40, 0.75);
             backdrop-filter: blur(4px);
@@ -172,7 +170,6 @@
             }
         }
 
-        /* 信息栏（含倍速按钮） */
         .info-bar {
             padding: 10px 16px;
             display: flex;
@@ -214,7 +211,6 @@
             transform: scale(0.96);
         }
 
-        /* 倍速下拉菜单（固定定位） */
         .speed-menu {
             position: fixed;
             background: rgba(20, 28, 40, 0.96);
@@ -248,7 +244,6 @@
             color: white;
         }
 
-        /* AB选项面板 */
         .options-panel {
             padding: 16px 16px 20px;
             background: rgba(18, 24, 36, 0.96);
@@ -310,7 +305,6 @@
             max-width: 280px
         }
 
-        /* 引导手指动画 */
         .guide-finger {
             position: absolute;
             top: -45px;
@@ -342,7 +336,6 @@
             display: none
         }
 
-        /* 进度回溯控制 */
         .history-control {
             margin-top: 4px;
             display: flex;
@@ -452,7 +445,6 @@
             width: 100%
         }
 
-        /* 底部致谢 */
         .credits {
             text-align: center;
             font-size: 0.7rem;
@@ -463,7 +455,6 @@
             line-height: 1.4
         }
 
-        /* 临时提示 */
         .toast-msg {
             position: fixed;
             bottom: 20px;
@@ -483,7 +474,6 @@
             touch-action: manipulation
         }
 
-        /* 路径模态框 */
         .path-modal {
             position: fixed;
             top: 0;
@@ -620,7 +610,7 @@
     }
 
     // ================================================================
-    // 视频路径配置（Base64 混淆）
+    // 视频路径配置
     // ================================================================
     const encryptedZel = "aHR0cHM6Ly92aWRlby0xMjU3OTY4MTUyLmNvcy5hcC1jaG9uZ3FpbmcubXlxY2xvdWQuY29tL3YzL2xvdy8=";
     const zel = atob(encryptedZel);
@@ -639,7 +629,7 @@
     };
 
     // ================================================================
-    // 剧情图谱（完全展开，便于修改）
+    // 剧情图谱
     // ================================================================
     const VIDEO_GRAPH = {
         "pt": {
@@ -708,7 +698,7 @@
     }
 
     // ================================================================
-    // DOM 元素引用
+    // DOM 元素
     // ================================================================
     const video = document.getElementById('storyVideo');
     const videoWrapper = document.getElementById('videoWrapper');
@@ -782,7 +772,7 @@
     }
 
     // ================================================================
-    // 倍速控制（全局）
+    // 倍速控制（全局生效）
     // ================================================================
     function applyPlaybackRate() {
         if (!player) return;
@@ -838,7 +828,7 @@
     }
 
     // ================================================================
-    // ended 事件绑定（兼容 Video.js 与原生）
+    // ended 事件绑定
     // ================================================================
     function bindEndedHandler(handler) {
         if (currentEndedHandler) {
@@ -851,7 +841,7 @@
     }
 
     // ================================================================
-    // 视频加载事件绑定
+    // 视频加载事件
     // ================================================================
     function bindVideoLoadEvents() {
         video.addEventListener('loadstart', startLoadMonitoring);
@@ -913,9 +903,7 @@
         setTimeout(() => div.remove(), 3500)
     }
 
-    function hideOptions() {
-        optionsPanel.classList.add('hidden')
-    }
+    function hideOptions() { optionsPanel.classList.add('hidden') }
 
     function clearHistory() {
         historyNodes = [];
@@ -998,8 +986,8 @@
     }
 
     // ================================================================
-    // 跳转到节点末尾（用于 rechoice 重新选择）
-    // 修复 iOS 跳转不到末尾的问题：通过 seeked 事件确保跳转完成再播放
+    // ★★★ 核心修复：跳转到节点末尾（用于 rechoice 重新选择）★★★
+    // 专门针对 iOS 优化：使用 Video.js 的 currentTime() 并配合 seeked 事件 + 超时重试
     // ================================================================
     function jumpToNodeEnd(targetNodeId, callbackAfterEnd = null) {
         if (isTransition) return;
@@ -1014,6 +1002,7 @@
             video.removeEventListener('ended', currentEndedHandler);
             currentEndedHandler = null;
         }
+        // 加载视频
         if (player) {
             player.src(node.videoUrl);
             player.load();
@@ -1026,43 +1015,57 @@
 
         // 定义跳转末尾并播放的函数
         const seekToEndAndPlay = () => {
-            if (video.duration && isFinite(video.duration)) {
-                const targetTime = Math.max(0, video.duration - 2); // 末尾前2秒
-                video.currentTime = targetTime;
-                // 等待 seeked 事件，确保跳转完成后再播放
+            if (!player) {
+                // 降级：直接使用原生 video
+                if (video.duration && isFinite(video.duration)) {
+                    const targetTime = Math.max(0, video.duration - 2);
+                    video.currentTime = targetTime;
+                    video.play().catch(err => showMsg("点击画面播放", false));
+                } else {
+                    video.play().catch(err => showMsg("点击画面播放", false));
+                }
+                return;
+            }
+            // 使用 Video.js API
+            const duration = player.duration();
+            if (duration && isFinite(duration)) {
+                const targetTime = Math.max(0, duration - 2);
+                // 设置 currentTime
+                player.currentTime(targetTime);
+                // 尝试播放
+                player.play().catch(err => showMsg("点击画面播放", false));
+                // 监听 seeked 事件确保跳转完成
                 const onSeeked = () => {
-                    video.removeEventListener('seeked', onSeeked);
-                    if (player) {
+                    player.off('seeked', onSeeked);
+                    // 如果播放器暂停，则继续播放
+                    if (player.paused()) {
                         player.play().catch(err => showMsg("点击画面播放", false));
-                    } else {
-                        video.play().catch(err => showMsg("点击画面播放", false));
                     }
                 };
-                video.addEventListener('seeked', onSeeked, { once: true });
-                // 备用超时：如果 seeked 事件未触发，2秒后强制播放
+                player.on('seeked', onSeeked);
+                // 备用超时：2秒后如果还没触发 seeked，强制播放
                 setTimeout(() => {
-                    video.removeEventListener('seeked', onSeeked);
-                    if (player) {
+                    player.off('seeked', onSeeked);
+                    if (player.paused()) {
                         player.play().catch(err => showMsg("点击画面播放", false));
-                    } else {
-                        video.play().catch(err => showMsg("点击画面播放", false));
                     }
                 }, 2000);
             } else {
                 // 无法获取时长，直接播放
-                if (player) {
-                    player.play().catch(err => showMsg("点击画面播放", false));
-                } else {
-                    video.play().catch(err => showMsg("点击画面播放", false));
-                }
+                player.play().catch(err => showMsg("点击画面播放", false));
             }
         };
 
+        // 等待视频加载完成
         const onLoaded = () => {
             video.removeEventListener('loadedmetadata', onLoaded);
-            if (video.readyState >= 1) {
+            // 如果播放器已就绪，立即执行 seek
+            if (player && player.readyState() >= 1) {
+                seekToEndAndPlay();
+            } else if (video.readyState >= 1) {
                 seekToEndAndPlay();
             } else {
+                // 等待 canplay
                 const onCanPlay = () => {
                     video.removeEventListener('canplay', onCanPlay);
                     seekToEndAndPlay();
@@ -1073,6 +1076,7 @@
         video.addEventListener('loadedmetadata', onLoaded);
         if (video.readyState >= 1) onLoaded();
 
+        // 绑定 ended 事件
         const onEnded = () => {
             sceneLabel.textContent = node.title;
             isJumpback = false;
@@ -1401,7 +1405,7 @@
     });
 
     // ================================================================
-    // 倍速功能实现
+    // 倍速功能
     // ================================================================
     const speedBtn = document.getElementById('speedBtn');
     const speedMenu = document.getElementById('speedMenu');
@@ -1471,7 +1475,7 @@
         });
     });
 
-    console.log("互动视频已启动");
+    console.log("互动视频已启动 ");
 </script>
 </body>
 </html>
